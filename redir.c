@@ -745,7 +745,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 	}
      
 	debug1("peer IP is %s\n", inet_ntoa(client.sin_addr));
-	debug1("peer socket is %d\n", client.sin_port);
+	debug1("peer socket is %d\n", ntohs(client.sin_port));
 
 	/*
 	 * Double fork here so we don't have to wait later
@@ -871,8 +871,8 @@ do_accept(int servsock, struct sockaddr_in *target)
 		strcpy(tmp2, inet_ntoa(target->sin_addr));
 	  
 		syslog(LOG_NOTICE, "connecting %s/%d to %s/%d",
-		       tmp1, client.sin_port,
-		       tmp2, target->sin_port);
+		       tmp1, ntohs(client.sin_port),
+		       tmp2, ntohs(target->sin_port));
 	}
 
 	/* do proxy stuff */
@@ -1066,7 +1066,7 @@ main(int argc, char *argv[])
 
 		if (!getpeername(0, (struct sockaddr *) &client, &client_size)) {
 			debug1("peer IP is %s\n", inet_ntoa(client.sin_addr));
-			debug1("peer socket is %d\n", client.sin_port);
+			debug1("peer socket is %d\n", ntohs(client.sin_port));
 		}
 		if ((targetsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("target: socket");
@@ -1109,8 +1109,8 @@ main(int argc, char *argv[])
 
 		if (dosyslog) {
 			syslog(LOG_NOTICE, "connecting %s/%d to %s/%d",
-			       inet_ntoa(client.sin_addr), client.sin_port,
-			       target_ip, target.sin_port);
+			       inet_ntoa(client.sin_addr), ntohs(client.sin_port),
+			       target_ip, ntohs(target.sin_port));
 		}
 
 		/* Just start copying - one side of the loop is stdin - 0 */
