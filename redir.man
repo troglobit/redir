@@ -12,8 +12,9 @@ redir \- redirect tcp connections
 .RB [ \--name=str ] 
 .RB [ \--timeout=n ]
 .RB [ \--bind_addr=my.other.ip.address ]
-.RB [ \--ftp ]
+.RB [ \--ftp=type ]
 .RB [ \--transproxy ]
+.RB [ \--connect=host:port ]
 .I --lport=port
 .I --cport=port
 .ll -8
@@ -25,8 +26,9 @@ redir \- redirect tcp connections
 .RB [ \--syslog 
 .RB [ \--name=str ] 
 .RB [ \--timeout=n ]
-.RB [ \--ftp ]
+.RB [ \--ftp=type ]
 .RB [ \--transproxy ]
+.RB [ \--connect=host:port ]
 .I --cport=port
 .ll -8
 .br
@@ -73,13 +75,21 @@ for incoming connections.
 .TP
 .B \--ftp
 When using redir for an FTP server, this will cause redir to also
-redirect passive ftp connections, so that clients using passive mode
-will work properly.
+redirect ftp connections.  Type should be specified as either "port",
+"pasv", or "both", to specify what type of FTP connection to handle.
+Note that --transproxy often makes one or the other (generally port)
+undesirable. 
 .TP
 .B \--transproxy
 On a linux system with transparany proxying enables, causes redir to
 make connections appear as if they had come from their true origin.
 (see transproxy.txt in the source archive)
+.TP
+.B \--connect
+Redirects connections through an HTTP proxy which supports the CONNECT 
+command.  Specify the address and port of the proxy using --caddr and
+--cport.  --connect requires the hostname and port which the HTTP
+proxy will be asked to connect to.
 .SH "SEE ALSO"
 inetd(1)
 

@@ -1,5 +1,5 @@
 
-Redir v.2.1
+Redir v.2.2
 
 Redir is a port redirector.  It's functionally basically consists of
 the ability to listen for TCP connections on a given port, and, when
@@ -10,6 +10,16 @@ uses.  Consult the man page, or run with no options for usage information.
 
 Please check the Makefile to see if you need to make any changes to
 get it to compile correctly on your particular unix flavor.
+
+2.2 adds support for redirecting PORT mode ftp connections in addition 
+to PASV mode ftp redirection.  Thus --ftp is now split into
+--ftp={port,pasv,both} to determine what should be redirected.  The
+original version of this patch was submitted by Harald Holzer
+<harald.holzer@eunet.at>.
+
+2.2 adds the --connect option, which is useful if you're bouncing your
+connections through an HTTP proxy server.  Use as --connect=host:port, 
+and this will be the CONNECT line sent to the proxy.
 
 2.1 is just a bugfix release, fixing a problem with ftp redirection,
 and adds/fixes various logging messages.  Also a fix for some of the

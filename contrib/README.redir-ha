@@ -1,0 +1,23 @@
+
+redir-ha.c is a high-availability version of redir 2.1 sent to me by
+Peter Skliarouk (skliaroukp@geocities.com).  The most fundamental
+difference is that the --caddr option will now accept multiple hosts,
+so that load can be balanced, or that one faulted server can be
+avoided.
+
+This has not been integrated into the redir 2.2 source for a couple of 
+reasons.  First, I think that the level of complexity which is
+involved in this version of the source is quite difficult to
+maintain.  Also, the redir 2.2 source was significantly different from 
+2.1 that it would have had to be patched in manually. :)
+
+But, for those of you who would like this functionality (and, I agree, 
+it's a pretty slick feature), I felt I should finally get the code
+released.
+
+To use:
+
+Replace redir.c in the top-level source directory with redir-ha.c.  
+Compile.
+
+This will produce a redir 2.1 binary with the HA mods.
