@@ -5,26 +5,29 @@ redir \- redirect tcp connections
 .SH SYNOPSIS
 .ll +8
 .B redir
+.RB [ \--laddr=incoming.ip.address ]
+.RB [ \--caddr=host ]
 .RB [ \--debug ]
 .RB [ \--syslog 
-.RB [ \--name=str ] ]
+.RB [ \--name=str ] 
 .RB [ \--timeout=n ]
 .RB [ \--bind_addr=my.other.ip.address ]
 .RB [ \--ftp ]
-.I [ remote_host ]
-.I listen_port
-.I remote_port
+.RB [ \--transproxy ]
+.I --lport=port
+.I --cport=port
 .ll -8
 .br
 .B redir
 .RB \--inetd
+.RB [ \--caddr=host ]
 .RB [ \--debug ]
 .RB [ \--syslog 
-.RB [ \--name=str ] ]
+.RB [ \--name=str ] 
 .RB [ \--timeout=n ]
 .RB [ \--ftp ]
-.I [ remote_host ] 
-.I remote_port
+.RB [ \--transproxy ]
+.I --cport=port
 .ll -8
 .br
 .SH DESCRIPTION
@@ -35,12 +38,28 @@ address/port combination.
 It may be run either from inetd or as a standalone daemon.
 .SH OPTIONS
 .TP
+.B \--lport
+Specifies port to listen for connections on (when not running from inetd)
+.TP
+.B \--laddr
+IP address to bind to when listening for connections (when not
+running from inetd) 
+.TP
+.B \--cport
+Specifies port to connect to.
+.TP
+.B \--caddr
+Specifies remote host to connect to. (localhost if omitted)
+.TP
 .B \--inetd
 Run as a process started from inetd, with the connection passed as stdin
 and stdout on startup.
 .TP
 .B \--debug
 Write debug output to stderr or syslog.
+.TP
+.B \--name
+Specify program name to be used for TCP wrapper checks and syslog logging.
 .TP
 .B --timeout
 Timeout and close the connection after n seconds on inactivity.
@@ -56,6 +75,11 @@ for incoming connections.
 When using redir for an FTP server, this will cause redir to also
 redirect passive ftp connections, so that clients using passive mode
 will work properly.
+.TP
+.B \--transproxy
+On a linux system with transparany proxying enables, causes redir to
+make connections appear as if they had come from their true origin.
+(see transproxy.txt in the source archive)
 .SH "SEE ALSO"
 inetd(1)
 

@@ -1,0 +1,84 @@
+
+Transparent proxying support:
+
+(with much thanks to Bernd Eckenfels, who has been maintaing redir for
+debian, and pointed out to me that this could be done at all.)
+
+Most semi-recent versions of the linux kernel have an option which can
+be used with IP firewalls entitled "transparent proxying".  Basically,
+it allows one to add rules with ipfwadm which will redirect all
+connections to certain hosts, on certain ports, to a port on the
+firewall machine.
+
+An convienent upshot of this feature is that, when it is enabled, a
+program running as root may explicitly specify the outgoing address to
+be used when making a connection to just about anything it pleases,
+which allows us to, when redirecting a connection, make the connection
+to the destination machine appear as if it were coming from the system
+which connected to redir.  Also quite convenient is the fact that the
+program doing this does not actually have to be run using transparent
+proxy firewalling rules, it simply has to be compiled into the kernel.
+
+The net effect of it all is the --transproxy flag, which will use this
+to make connections "look right" in terms of their originating IP, as
+long as redir is running on a linux system with this feature compiled
+into its kernel.  (please don't ask me about kernel compiling issues,
+unless you're sure you have this option turned on, your kernel is
+otherwise installed/working correctly, and --transproxy isn't
+operating)
+
+
+Note the following side effects:
+
+1) Use of --transproxy will cause the --bind-addr option to have no
+   effect.  Not really a problem, as using them together wouldn't make
+   any sense in the first place.
+
+2) For redirection with --transproxy to work at all, the connection to
+   redir must pass through the firewall.  The following example should
+   illustrate this:
+
+   Let's say that there's a firewall machine running with the internal
+   IP 10.0.0.1, and a netmask of 255.0.0.0 (that is, inside network is
+   considered to encompass the entire 10.0.0.0 network).  All machines
+   inside the network are configured to use 10.0.0.1 as their gateway
+   address. We want toredirect all connections to the firewall on port 
+   2323 to port 23 on 10.0.0.2, and we'd like to use --transproxy, so we run:
+
+   redir --transproxy 10.0.0.2 23 2323
+
+   Case 1: Connection from the outside world.
+
+   Let's say someone at address 111.111.111.111 telnets to port 2323,
+   on the external ip address of the firewall machine.  Now, as all
+   traffic from inside the firewall to 111.111.111.111 must always
+   pass through the firewall, in any situation, this will work.
+
+   Case 2: Connection from somewhere on the internal network.
+
+   Now, someone at 10.0.0.3 wants to connect to the same service, but,
+   rather than telnetting to port 23 on 10.0.0.2, they've telnetted to
+   the port 2323 on 10.0.0.1 (or the external IP of the firewall,
+   doesn't matter).  This won't work.  This is because when the
+   destination machine (10.0.0.2) saw the connection appearing to come
+   from 10.0.0.3, it then expects the real 10.0.0.3 to be talking to
+   it, which is, in fact not the case.  By contrast, in case 1,
+   10.0.0.2, regardless of the external address, expected these
+   packets to come from the gateway host, which was, in fact, the
+   case.  For this reason, internal hosts will be unable to make
+   connections through a redir running with --transproxy enabled.
+
+This cannot properly be fixed by redir itself, as far as I can tell,
+except for using a workaround which would examine the system's routing
+tables, and then disable the effects of --transproxy when a connection
+is made from a host in the same routing block as redir's destination.
+This doesn't sound particularly worthwhile, given that there's no need
+for an internal machine to hit the redirector at all.  Patches will be
+accepted from someone who bothers to do it, however.
+
+Hopefully, you now have a clear understanding of how to use this
+feature.  Questions can be directed to sammy@users.qual.net.
+
+-- Sam Creasey (11/2/98)
+
+   

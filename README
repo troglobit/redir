@@ -1,5 +1,5 @@
 
-Redir v.1.1
+Redir v.2.0
 
 Redir is a port redirector.  It's functionally basically consists of
 the ability to listen for TCP connections on a given port, and, when
@@ -8,6 +8,35 @@ address/port, and pass data between them.  It finds most of its
 applications in traversing firewalls, but, of course, there are other
 uses.  Consult the man page, or run with no options for usage information.
 
+Please check the Makefile to see if you need to make any changes to
+get it to compile correctly on your particular unix flavor.
+
+2.0 has changed the command line syntax!  You're going to have to
+change how you call redir in order to upgrade, but not by all that
+much.  We now use --options for everything, instead of having the
+rather wonky "if you've got this thing here, something happens" method
+used before.  We apologize for the inconvenience, but this is really a
+lot less brain damaged.
+
+2.0 now includes support for using TCP wrappers, thanks to a patch
+submitted by Damien Miller <damien@ibs.com.au>.  The --name option now
+sets the TCP wrapper service name as well as the syslog program name,
+making it possible to run multiple instances of redir with different
+access controls.  Edit the Makefile to enable TCP wrappers.
+
+2.0 now actually implements --transproxy when running from inetd.
+
+2.0 has cleaned up the --ftp support, at least a little.  There are
+probably still improvements to be made here, but, alas.
+
+1.2 now should compile and run correctly on systems which lack
+getopt_long.
+
+1.2 adds the option --transproxy, which, when run as super-user on a
+linux system which has had transparent proxying compiled into it's
+kernel, will make connections seem as if they had come from their true
+origin.  see transproxy.txt for further discussion of this option.
+
 1.1 adds the option --ftp, which, when redirecting a port to an FTP
 server, will, when the server wants to initiate a passive connection,
 redirect another port for that connection.  
@@ -15,7 +44,7 @@ redirect another port for that connection.
 1.0 adds the option --bind-addr, which can force it to bind to a
 specific address or interface when making outgoing connections.
 
-I'm thinking of doing a 2.0 which never forks, but does one
+I'm thinking of eventually doing a version which never forks, but does one
 big-honking-select-loop, which probably wouldn't be much of a bother,
 and would save a good chunk of ram, but then an FD limit becomes quite
 a real possibility.  perhaps an #ifdef selecting the old or new code
@@ -35,11 +64,20 @@ Sam Creasey <sammy@users.qual.net>
 Thomas Osterried <thomas@x-berg.in-berlin.de>
 	Added the --bind-addr patch.
 
-31 October, 1998 - Sam Creasey <sammy@users.qual.net>
+11 February, 1999 - Sam Creasey <sammy@users.qual.net>
 
 Bug reports/patches/comments/etc please now to <sammy@users.qual.net>
 
 Current versions can be found at http://users.qual.net/~sammy/hacks
+
+redir is distributed under the terms of the GNU Public Licence,
+version 2 or later, which was distributed with this source archive in
+the file COPYING.
+
+the files in the getopt/ directory are taken from GNU source code
+distributed under the same license.  These particular files were
+copied from the GNU package gawk-3.0.3, because it happened to be
+sitting on my drive at the time.
 
 =======================================================================
 
