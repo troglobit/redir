@@ -1,0 +1,11 @@
+Begin3
+Title:		redir
+Version:	0.7
+Entered-date:	30JUN1996
+Description:	TCP Port redirector (for firewalls etc).
+Keywords:	tcp port redirector bouncer
+Author: 	Nigel.Metheringham@ThePLAnet.net
+Primary-site:	sunsite.unc.edu /pub/Linux/system/Network/daemons/redir-0.7.tar.gz
+		9KB
+Copying-policy:	GPL
+End

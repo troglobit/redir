@@ -1,0 +1,48 @@
+.PU
+.TH REDIR 1 local
+.SH NAME
+redir \- redirect tcp connections
+.SH SYNOPSIS
+.ll +8
+.B redir
+.RB [ \--debug ]
+.RB [ \--syslog 
+.RB [ \--name=str ] ]
+.RB [ \--timeout=n ]
+.I [ remote_host ]
+.I listen_port
+.I remote_port
+.ll -8
+.br
+.B redir
+.RB \--inetd
+.RB [ \--debug ]
+.RB [ \--syslog 
+.RB [ \--name=str ] ]
+.RB [ \--timeout=n ]
+.I [ remote_host ] 
+.I remote_port
+.ll -8
+.br
+.SH DESCRIPTION
+.I Redir
+redirects tcp connections coming in to a local port to a specified
+address/port combination.
+.PP
+It may be run either from inetd or as a standalone daemon.
+.SH OPTIONS
+.TP
+.B \--inetd
+Run as a process started from inetd, with the connection passed as stdin
+and stdout on startup.
+.TP
+.B \--debug
+Write debug output to stderr or syslog.
+.TP
+.B --timeout
+Timeout and close the connection after n seconds on inactivity.
+.TP
+.B \--syslog
+Log information to syslog.
+.SH "SEE ALSO"
+inetd(1)

@@ -1,0 +1,41 @@
+Redir v.0.7
+
+redir is a tcp port redirector for unix.
+It can run under inetd or stand alone (in which case it handles
+multiple connections).  Its 8 bit clean, not limited to line
+mode, is small and light.
+
+If you want access control run it under xinetd, or inetd with tcp
+wrappers.  Or you could use the tcp wrapper library to extend it and
+do fancy access control - if so please let me know.
+
+redir is released under GPL.
+
+	Nigel Metheringham
+	Nigel.Metheringham@ThePLAnet.net
+	30 June, 1996
+
+=======================================================================
+
+[Original readme from version 0.5]
+
+If you liked daemon, you'll LOVE redir!
+
+Redir, the fully functional (but only in line mode) port redirector for 
+unix!  (yeah!  WOOOO!).  Basically, it's like tredir.   But hacked from 
+daemon.  And poorly written.   But, hey, it dodges firewalls, and THAT's 
+the important part.  I think.  Oh, fuck it.  Look, it's useful.   Good 
+for dynamic IP, too.   Trust me, it is.
+
+usage: redir [remote-host] listen_port connect_port
+
+The syntax is a little clumsy, but it works. 
+
+compile with make redir or gcc redir.c -o redir
+
+comments/bugs/flames to sammy@freenet.akron.oh.us
+
+(please, write if you use the program!)
+
+
+
