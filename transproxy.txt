@@ -77,7 +77,7 @@ for an internal machine to hit the redirector at all.  Patches will be
 accepted from someone who bothers to do it, however.
 
 Hopefully, you now have a clear understanding of how to use this
-feature.  Questions can be directed to sammy@users.qual.net.
+feature.  Questions can be directed to sammy@oh.verio.com.
 
 -- Sam Creasey (11/2/98)
 

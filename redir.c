@@ -20,7 +20,7 @@
  *      -- Sammy (sammy@freenet.akron.oh.us)
  */
 
-/* oh, incidentally, Sammy is now sammy@users.qual.net */
+/* oh, incidentally, Sammy is now sammy@oh.verio.com */
 
 /* 980601: dl9sau
  * added some nice new features:
@@ -133,7 +133,7 @@ redir_usage(char *name)
     fprintf(stderr, "\t\t--inetd\t\trun from inetd\n");
     fprintf(stderr, "\t\t--debug\t\toutput debugging info\n");
     fprintf(stderr, "\t\t--timeout=<n>\tset timeout to n seconds\n");
-    fprintf(stderr, "\t\t--syslog=\tlog messages to syslog\n");
+    fprintf(stderr, "\t\t--syslog\tlog messages to syslog\n");
     fprintf(stderr, "\t\t--name=<str>\ttag syslog messages with 'str'\n");
 #ifdef USE_TCP_WRAPPERS
     fprintf(stderr, "\t\t            \tAlso used as service name for TCP wrappers\n");
@@ -312,7 +312,12 @@ void ftp_clean(int send, char *buf, unsigned long *bytes)
 
      /* get the outside interface so we can listen */
      if(getsockname(send, (struct sockaddr *)&sockname, &socksize) != 0) {
+
 	  perror("getsockname");
+
+	  if (dosyslog)
+		syslog(LOG_ERR, "getsockname failed: %m");
+
 	  exit(1);
      }
 
@@ -353,7 +358,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes)
      newsession.sin_port = htons(rport);
      newsession.sin_family = AF_INET;
      newsession.sin_addr.s_addr = remip[0] | (remip[1] << 8)
-	  | (remip[2] << 18) | (remip[3] << 24);
+	  | (remip[2] << 16) | (remip[3] << 24);
 
      debug1("ftp server ip: %s\n", inet_ntoa(newsession.sin_addr));
      debug1("ftp server port: %d\n", rport);
@@ -487,7 +492,12 @@ do_accept(int servsock, struct sockaddr_in *target)
      debug("top of accept loop\n");
      if ((clisock = accept(servsock, (struct  sockaddr  *) &client, 
 			   &clientlen)) < 0) {
+
 	  perror("server: accept");
+
+	  if (dosyslog)
+		syslog(LOG_ERR, "accept failed: %m");
+
 	  exit(1);
      }
      
@@ -505,7 +515,11 @@ do_accept(int servsock, struct sockaddr_in *target)
      switch(fork())
      {
      	case -1: /* Error */
-     		syslog(LOG_ERR, "Couldn't fork: %m");
+     		perror("(server) fork");
+
+     		if (dosyslog)
+     			syslog(LOG_ERR, "(server) fork failed: %m");
+
      		_exit(1);
      	case 0:  /* Child */
      		break;
@@ -528,7 +542,11 @@ do_accept(int servsock, struct sockaddr_in *target)
      switch(fork())
      {
      	case -1: /* Error */
-     		syslog(LOG_ERR, "Couldn't fork: %m");
+     		perror("(child) fork");
+
+     		if (dosyslog)
+     			syslog(LOG_ERR, "(child) fork failed: %m");
+
      		_exit(1);
      	case 0:  /* Child */
      		break;
@@ -544,14 +562,22 @@ do_accept(int servsock, struct sockaddr_in *target)
      sock_hostname(&request);
      sock_hostaddr(&request);
 
-     if (!hosts_access(&request))
+     if (!hosts_access(&request)) {
      	refuse(&request);
-     else
+		_exit(0);
+     }
+
+	  if (dosyslog)
      	syslog(LOG_INFO, "accepted connect from %s", eval_client(&request));
 #endif /* USE_TCP_WRAPPERS */
 
      if ((targetsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	  
 	  perror("target: socket");
+	  
+	  if (dosyslog)
+		syslog(LOG_ERR, "socket failed: %m");
+		
 	  _exit(1);
      }
 
@@ -569,6 +595,10 @@ do_accept(int servsock, struct sockaddr_in *target)
 	  if (bind(targetsock, (struct  sockaddr  *) &addr_out, 
 		   sizeof(struct sockaddr_in)) < 0) {
 	       perror("bind_addr: cannot bind to forcerd outgoing addr");
+
+	       if (dosyslog)
+	       	syslog(LOG_ERR, "bind failed: %m");
+
 	       _exit(1);
 	  }
 	  debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
@@ -576,17 +606,28 @@ do_accept(int servsock, struct sockaddr_in *target)
 
      if (connect(targetsock, (struct  sockaddr  *) target, 
 		 sizeof(struct sockaddr_in)) < 0) {
-	  perror("target: connect");
-	  _exit(1);
+		perror("target: connect");
+
+		if (dosyslog)
+			syslog(LOG_ERR, "bind failed: %m");
+
+		_exit(1);
      }
      
      debug1("connected to %s\n", inet_ntoa(target->sin_addr));
 
-     if (dosyslog)
-	  syslog(LOG_NOTICE, "connecting %s/%d to %s/%d",
-		 inet_ntoa(client.sin_addr), client.sin_port,
-		 inet_ntoa(target->sin_addr), target->sin_port);
+     /* thanks to Anders Vannman for the fix to make proper syslogging
+	happen here...  */
 
+     if (dosyslog) {
+	  char tmp1[20], tmp2[20];
+	  strcpy(tmp1, inet_ntoa(client.sin_addr));
+	  strcpy(tmp2, inet_ntoa(target->sin_addr));
+	  
+	  syslog(LOG_NOTICE, "connecting %s/%d to %s/%d",
+		 tmp1, client.sin_port,
+		 tmp2, target->sin_port);
+     }
      copyloop(clisock, targetsock, timeout);
      exit(0);	/* Exit after copy */
 }
@@ -610,12 +651,17 @@ int bindsock(char *addr, int port, int fail)
       */
      
      if ((servsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-	  if(fail)
+	  if(fail) {
 	       return -1;
+	  }
 	  else {
 	       perror("server: socket");
+
+	       if (dosyslog)
+				syslog(LOG_ERR, "socket failed: %m");
+
 	       exit(1);
-	  }
+		}
      }
      
      server.sin_family = AF_INET;
@@ -647,23 +693,31 @@ int bindsock(char *addr, int port, int fail)
 	       close(servsock);
 	       return -1;
 	  } else {
-	  perror("server: bind");
-	  exit(1);
-	  }
+	       perror("server: bind");
+
+	       if (dosyslog)
+				syslog(LOG_ERR, "bind failed: %m");
+
+	       exit(1);
+		}
      }
      
      /*
       * Listen on the socket.
       */
      
-     if (listen(servsock, 1) < 0) {
+     if (listen(servsock, 10) < 0) {
 	  if(fail) {
 	       close(servsock);
 	       return -1;
 	  } else {
-	  perror("server: listen");
-	  exit(1);
-	  }
+	       perror("server: listen");
+
+	       if (dosyslog)
+				syslog(LOG_ERR, "listen failed: %m");
+
+	       exit(1);
+		}
      }
      
      return servsock;
@@ -735,6 +789,9 @@ main(int argc, char *argv[])
 
 #ifdef USE_TCP_WRAPPERS
 	request_init(&request, RQ_DAEMON, ident, RQ_FILE, 0, 0);
+	sock_host(&request);
+	sock_hostname(&request);
+	sock_hostaddr(&request);
 	
 	if (!hosts_access(&request))
 		refuse(&request);
@@ -746,6 +803,10 @@ main(int argc, char *argv[])
 	}
 	if ((targetsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	    perror("target: socket");
+
+	    if (dosyslog)
+			syslog(LOG_ERR, "targetsock failed: %m");
+
 	    exit(1);
 	}
 
@@ -760,6 +821,10 @@ main(int argc, char *argv[])
 	     if (bind(targetsock, (struct  sockaddr  *) &addr_out, 
 		     sizeof(addr_out)) < 0) {
 	          perror("bind_addr: cannot bind to forcerd outgoing addr");
+				 
+	          if (dosyslog)
+					syslog(LOG_ERR, "bind failed: %m");
+				 
 	          exit(1);
 	     }
 	     debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
@@ -768,6 +833,10 @@ main(int argc, char *argv[])
 	if (connect(targetsock, (struct sockaddr *) &target, 
 		    sizeof(target)) < 0) {
 	    perror("target: connect");
+
+	    if (dosyslog)
+			syslog(LOG_ERR, "connect failed: %m");
+
 	    exit(1);
 	}
 

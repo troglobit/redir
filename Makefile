@@ -11,6 +11,10 @@ LDFLAGS = -s
 # solaris, and others, may also need these libraries to link
 # also edit here if you're using the TCP wrappers code
 LIBS = #-lwrap #-lnsl -lsocket
+# this line should build under os/2 using syslog from
+# http://r350.ee.ntu.edu.tw/~hcchu/os2/ports/dev
+# submitted by: Doug LaRue (dlarue@nosc.mil)
+# LIBS = -lsyslog -lsocket
 
 all: redir
 

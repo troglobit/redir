@@ -1,5 +1,5 @@
 
-Redir v.2.0
+Redir v.2.1
 
 Redir is a port redirector.  It's functionally basically consists of
 the ability to listen for TCP connections on a given port, and, when
@@ -10,6 +10,10 @@ uses.  Consult the man page, or run with no options for usage information.
 
 Please check the Makefile to see if you need to make any changes to
 get it to compile correctly on your particular unix flavor.
+
+2.1 is just a bugfix release, fixing a problem with ftp redirection,
+and adds/fixes various logging messages.  Also a fix for some of the
+TCP wrappers code.
 
 2.0 has changed the command line syntax!  You're going to have to
 change how you call redir in order to upgrade, but not by all that
@@ -58,17 +62,17 @@ Credits should, logically, go to the following people:
 Nigel Metheringham <Nigel.Metheringham@ThePLAnet.net>
 	For taking the code I wrote and making it into a more stable 
 	sensible, and usable package.  
-Sam Creasey <sammy@users.qual.net>
+Sam Creasey <sammy@oh.verio.com>
 	Original author, but this package would be vastly inferior without 
 	Nigel's modifications.
 Thomas Osterried <thomas@x-berg.in-berlin.de>
 	Added the --bind-addr patch.
 
-11 February, 1999 - Sam Creasey <sammy@users.qual.net>
+22 June, 1999 - Sam Creasey <sammy@oh.verio.com>
 
-Bug reports/patches/comments/etc please now to <sammy@users.qual.net>
+Bug reports/patches/comments/etc please now to <sammy@oh.verio.com>
 
-Current versions can be found at http://users.qual.net/~sammy/hacks
+Current versions can be found at http://oh.verio.com/~sammy/hacks
 
 redir is distributed under the terms of the GNU Public Licence,
 version 2 or later, which was distributed with this source archive in
