@@ -1,12 +1,19 @@
 
-Redir v.1.0
+Redir v.1.1
 
-This version, titled 1.0, is a current running/stable version of redir which 
-is fundamentally identical to version 0.7, with the exception that it adds 
---bind-addr, which can force it to bind to a specific address or interface.
-But, all things considered, it might as well be 1.0, as it's stable and done
-with.  The rest of this file is still valid, may as well read the rest of the
-readmes.
+Redir is a port redirector.  It's functionally basically consists of
+the ability to listen for TCP connections on a given port, and, when
+it recieves a connection, to then connect to a given destination
+address/port, and pass data between them.  It finds most of its
+applications in traversing firewalls, but, of course, there are other
+uses.  Consult the man page, or run with no options for usage information.
+
+1.1 adds the option --ftp, which, when redirecting a port to an FTP
+server, will, when the server wants to initiate a passive connection,
+redirect another port for that connection.  
+
+1.0 adds the option --bind-addr, which can force it to bind to a
+specific address or interface when making outgoing connections.
 
 I'm thinking of doing a 2.0 which never forks, but does one
 big-honking-select-loop, which probably wouldn't be much of a bother,
@@ -28,9 +35,11 @@ Sam Creasey <sammy@users.qual.net>
 Thomas Osterried <thomas@x-berg.in-berlin.de>
 	Added the --bind-addr patch.
 
-8 August, 1998 - Sam Creasey <sammy@users.qual.net>
+31 October, 1998 - Sam Creasey <sammy@users.qual.net>
 
 Bug reports/patches/comments/etc please now to <sammy@users.qual.net>
+
+Current versions can be found at http://users.qual.net/~sammy/hacks
 
 =======================================================================
 

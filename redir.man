@@ -10,6 +10,7 @@ redir \- redirect tcp connections
 .RB [ \--name=str ] ]
 .RB [ \--timeout=n ]
 .RB [ \--bind_addr=my.other.ip.address ]
+.RB [ \--ftp ]
 .I [ remote_host ]
 .I listen_port
 .I remote_port
@@ -21,6 +22,7 @@ redir \- redirect tcp connections
 .RB [ \--syslog 
 .RB [ \--name=str ] ]
 .RB [ \--timeout=n ]
+.RB [ \--ftp ]
 .I [ remote_host ] 
 .I remote_port
 .ll -8
@@ -49,6 +51,11 @@ Log information to syslog.
 .B \--bind_addr
 Forces redir to pick a specific address/interface to bind to when it listens 
 for incoming connections. 
+.TP
+.B \--ftp
+When using redir for an FTP server, this will cause redir to also
+redirect passive ftp connections, so that clients using passive mode
+will work properly.
 .SH "SEE ALSO"
 inetd(1)
 

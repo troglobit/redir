@@ -20,6 +20,8 @@
  *      -- Sammy (sammy@freenet.akron.oh.us)
  */
 
+/* oh, incidentally, Sammy is now sammy@users.qual.net */
+
 /* 980601: dl9sau
  * added some nice new features:
  *
@@ -73,6 +75,10 @@ int dodebug = 0;
 int dosyslog = 0;
 unsigned int reuse_addr = 1;
 char * bind_addr = NULL;
+char * ftp_addr = NULL;
+struct sockaddr_in addr_out;
+int timeout = 0;
+int ftp = 0;
 
 #ifdef NEED_STRRCHR
 #define strrchr rindex
@@ -105,6 +111,7 @@ redir_usage(char *name)
     fprintf(stderr, "\t\t--syslog=\tlog messages to syslog\n");
     fprintf(stderr, "\t\t--name=<str>\ttag syslog messages with 'str'\n");
     fprintf(stderr, "\t\t--bind_addr=IP\tbind() outgoing IP to given addr\n");
+    fprintf(stderr, "\t\t--ftp\t\tredirect passive ftp connections\n");
     fprintf(stderr, "\n\tVersion %s - $Id$\n", VERSION);
     exit(2);
 }
@@ -120,7 +127,8 @@ parse_args(int argc,
 	   int * dodebug,
 	   int * inetd,
 	   int * dosyslog,
-	   char ** bind_addr)
+	   char ** bind_addr,
+	   int * ftp)
 {
     static struct option long_options[] = {
 	{"bind_addr", required_argument, 0, 'b'},
@@ -130,6 +138,7 @@ parse_args(int argc,
 	{"ident",    required_argument, 0, 'n'},
 	{"name",     required_argument, 0, 'n'},
 	{"syslog",   no_argument,       0, 's'},
+	{"ftp",      no_argument,       0, 'f'},
 	{0,0,0,0}		/* End marker */
     };
     int option_index = 0;
@@ -167,6 +176,10 @@ parse_args(int argc,
 	case 's':
 	    (*dosyslog)++;
 	    break;
+	    
+	case 'f':
+	     (*ftp)++;
+	     break;
 
 	default:
 	    redir_usage(argv[0]);
@@ -248,6 +261,75 @@ parse_args(int argc,
     return;
 }
 
+void ftp_clean(int send, char *buf, unsigned long *bytes)
+{
+
+     char *port_start;
+     int rporthi;
+     int lporthi;
+     int portlo;
+     int lport, rport;
+     int locip[4];
+     int remip[4];
+     int localsock;
+     char destip[16];
+
+     struct sockaddr_in newsession;
+
+     /* is this a passive mode return ? */
+     if(strncmp(buf, "227", 3)) {
+	  write(send, buf, (*bytes));
+	  return;
+     }
+     
+     /* parse the old address out of the buffer */
+     port_start = strchr(buf, '(');
+
+     sscanf(port_start, "(%d,%d,%d,%d,%d,%d", &remip[0], &remip[1],
+	    &remip[2], &remip[3], &rporthi, &portlo);
+
+     /* we shift around the port we listen on versus the port the
+	ftp server's listening on as to try to avoid an attempt to
+	bind to a port which is taken.  general strategy is to move
+	our listen port above 32767.  or decrement the high byte by
+	one if it's there already. */
+
+     if(rporthi > 0x7f) 
+	  lporthi = rporthi - 1;
+     else
+	  lporthi = rporthi + 0x7f;
+
+     lport = (lporthi*0x100+portlo);
+     rport = (rporthi*0x100+portlo);
+
+     sscanf(ftp_addr, "%d.%d.%d.%d", &locip[0], &locip[1], &locip[2], &locip[3]);
+     (*bytes) = sprintf(buf, "227 Entering Passive Mode (%d,%d,%d,%d,%d,%d)\n",
+			locip[0], locip[1], locip[2], locip[3], lporthi, portlo);
+
+     sprintf(destip, "%d.%d.%d.%d", remip[0], remip[1], remip[2], remip[3]);
+
+     debug1("ftp server ip: %s\n", destip);
+     debug1("ftp server port: %d\n", rport);
+     debug1("listening on port %d\n", lport);
+
+     newsession.sin_port = htons(rport);
+     newsession.sin_family = AF_INET;
+     newsession.sin_addr.s_addr = inet_addr(destip);
+
+     localsock = bindsock(NULL, lport);
+     
+     /* now that we're bound and listening, we can safely send the new
+	passive string without fear of them getting a connection
+	refused. */
+     write(send, buf, (*bytes));     
+
+     do_accept(localsock, &newsession);
+     close(localsock);
+
+     return;
+
+
+}
 
 void
 copyloop(int insock, 
@@ -307,8 +389,14 @@ copyloop(int insock,
 	if(FD_ISSET(outsock, &c_iofds)) {
 	    if((bytes = read(outsock, buf, sizeof(buf))) <= 0)
 		break;
-	    if(write(insock, buf, bytes) != bytes)
-		break;
+	    /* if we're correcting for PASV on ftp redirections, then
+	       fix buf and bytes to have the new address, among other
+	       things */
+	    if(ftp_addr)
+		 ftp_clean(insock, buf, &bytes);
+	    else 
+		 if(write(insock, buf, bytes) != bytes)
+		      break;
 	    bytes_in += bytes;
 	}
     }
@@ -335,23 +423,164 @@ copyloop(int insock,
     return;
 }
 
+/* lwait for a connection and move into copyloop...  again,
+   passive ftp's will call this, so we don't dupilcate it. */
+
+int
+do_accept(int servsock, struct sockaddr_in *target)
+{
+
+     int clisock;
+     int targetsock;
+     struct sockaddr_in client;
+     int clientlen = sizeof(client);
+     int forkpid;
+     
+     debug("top of accept loop\n");
+     if ((clisock = accept(servsock, (struct  sockaddr  *) &client, 
+			   &clientlen)) < 0) {
+	  perror("server: accept");
+	  exit(1);
+     }
+     
+     debug1("peer IP is %s\n", inet_ntoa(client.sin_addr));
+     debug1("peer socket is %d\n", client.sin_port);
+
+     if ((targetsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	  perror("target: socket");
+	  exit(1);
+     }
+     
+     if (bind_addr) {
+	  /* this only makes sense if an outgoing IP addr has been forced;
+	   * at this point, we have a valid targetsock to bind() to.. */
+	  if (bind(targetsock, (struct  sockaddr  *) &addr_out, 
+		   sizeof(struct sockaddr_in)) < 0) {
+	       perror("bind_addr: cannot bind to forcerd outgoing addr");
+	       exit(1);
+	  }
+	  debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
+     }
+     
+     if (connect(targetsock, (struct  sockaddr  *) target, 
+		 sizeof(struct sockaddr_in)) < 0) {
+	  perror("target: connect");
+	  exit(1);
+     }
+     
+     if (dosyslog)
+	  syslog(LOG_NOTICE, "connecting %s/%d to %s/%d",
+		 inet_ntoa(client.sin_addr), client.sin_port,
+		 inet_ntoa(target->sin_addr), target->sin_port);
+
+     /*
+      * Double fork here so we don't have to wait later
+      * This detaches us from our parent so that the parent
+      * does not need to pick up dead kids later.
+      */
+     forkpid = fork();
+     if (forkpid == 0){
+	  forkpid = fork();
+	  if (forkpid == 0){
+	       copyloop(clisock, targetsock, timeout);
+	       exit(0);	/* Exit after copy */
+	  } else {
+	       exit(0);	/* Exit back to wait in parent */
+	  }
+     } else {
+	  int status;
+	  
+	  /* Wait for child (who has forked off grandchild) */
+	  (void) wait(&status);
+     }	    
+     
+     /* Close sockets to prevent confusion */
+     close(clisock);
+     close(targetsock);     
+     
+}
+
+/* bind to a new socket, we do this out here because passive-fixups
+   are going to call it too, and there's no sense dupliciting the
+   code. */
+
+int bindsock(char *addr, int port) 
+{
+
+     int servsock;
+     struct sockaddr_in server;
+     
+     /*
+      * Get a socket to work with.  This socket will
+      * be in the Internet domain, and will be a
+      * stream socket.
+      */
+     
+     if ((servsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	  perror("server: socket");
+	  exit(1);
+     }
+     
+     server.sin_family = AF_INET;
+     server.sin_port = htons(port);
+     if (addr != NULL) {
+	  struct hostent *hp;
+	  
+	  debug1("listening on %s\n", addr);
+	  if ((hp = gethostbyname(addr)) == NULL) {
+	       fprintf(stderr, "%s: cannot resolve hostname.\n", addr);
+	       exit(1);
+	  }
+	  memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
+	  if (ftp) 
+	       ftp_addr = strdup(inet_ntoa(server.sin_addr));
+
+     } else {
+	  debug("local IP is default\n");
+	  server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
+     }
+     
+     /*
+      * Try to bind the address to the socket.
+      */
+     
+     if (bind(servsock, (struct  sockaddr  *) &server, 
+	      sizeof(server)) < 0) {
+	  perror("server: bind");
+	  exit(1);
+     }
+     
+     setsockopt(servsock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
+     setsockopt(servsock, SOL_SOCKET, SO_LINGER, 0, sizeof(SO_LINGER)); 
+     
+     /*
+      * Listen on the socket.
+      */
+     
+     if (listen(servsock, 1) < 0) {
+	  perror("server: listen");
+	  exit(1);
+     }
+     
+     return servsock;
+}
+
 int
 main(int argc, char *argv[])
 {
 
-    struct sockaddr_in target, addr_out;
+    struct sockaddr_in target;
     char *target_addr;
     int target_port;
     char *local_addr;
     int local_port;
-    int timeout = 0;
     int inetd = 0;
     char * target_ip;
     char * ip_to_target;
 
     debug("parse args\n");
     parse_args(argc, argv, &target_addr, &target_port, &local_addr, &local_port,
-	       &timeout, &dodebug, &inetd, &dosyslog, &bind_addr);
+	       &timeout, &dodebug, &inetd, &dosyslog, &bind_addr, &ftp);
 
     /* Set up target */
     target.sin_family = AF_INET;
@@ -435,57 +664,11 @@ main(int argc, char *argv[])
 	copyloop(0, targetsock, timeout);
     } else {
 	int servsock;
-	struct sockaddr_in server;
-
-	/*
-	 * Get a socket to work with.  This socket will
-	 * be in the Internet domain, and will be a
-	 * stream socket.
-	 */
-
-	if ((servsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-	    perror("server: socket");
-	    exit(1);
-	}
-
-	server.sin_family = AF_INET;
-	server.sin_port = htons(local_port);
-        if (local_addr) {
-	   struct hostent *hp;
-
-	   debug1("listening on %s\n", local_addr);
-	   if ((hp = gethostbyname(local_addr)) == NULL) {
-	     fprintf(stderr, "%s: cannot resolve hostname.\n", local_addr);
-	     exit(1);
-	   }
-	   memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
-        } else {
-		debug("local IP is default\n");
-		server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
-        }
-
-	/*
-	 * Try to bind the address to the socket.
-	 */
-
-	if (bind(servsock, (struct  sockaddr  *) &server, 
-		 sizeof(server)) < 0) {
-	    perror("server: bind");
-	    exit(1);
-	}
-
-	/*setsockopt(servsock, SOL_SOCKET, SO_REUSEADDR, 1, sizeof(SO_REUSEADDR));*/
-	setsockopt(servsock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
-	setsockopt(servsock, SOL_SOCKET, SO_LINGER, 0, sizeof(SO_LINGER)); 
-
-	/*
-	 * Listen on the socket.
-	 */
-
-	if (listen(servsock, 1) < 0) {
-	    perror("server: listen");
-	    exit(1);
-	}
+	
+	if(local_addr)
+	     servsock = bindsock(local_addr, local_port);
+	else
+	     servsock = bindsock(NULL, local_port);
 
 	/*
 	 * Accept connections.  When we accept one, ns
@@ -493,73 +676,8 @@ main(int argc, char *argv[])
 	 * contain the address of the client.
 	 */
 
-	while (1) {
-	    int clisock;
-	    int targetsock;
-	    struct sockaddr_in client;
-	    int clientlen = sizeof(client);
-	    int forkpid;
-
-	    debug("top of accept loop\n");
-	    if ((clisock = accept(servsock, (struct  sockaddr  *) &client, 
-				  &clientlen)) < 0) {
-		perror("server: accept");
-		exit(1);
-	    }
-
-	    debug1("peer IP is %s\n", inet_ntoa(client.sin_addr));
-	    debug1("peer socket is %d\n", client.sin_port);
-
-	    if ((targetsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		perror("target: socket");
-		exit(1);
-	    }
-
-	    if (bind_addr) {
-		/* this only makes sense if an outgoing IP addr has been forced;
-		 * at this point, we have a valid targetsock to bind() to.. */
-	    	if (bind(targetsock, (struct  sockaddr  *) &addr_out, 
-			sizeof(addr_out)) < 0) {
-	             perror("bind_addr: cannot bind to forcerd outgoing addr");
-	             exit(1);
-		}
-	        debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
-            }
-	    if (connect(targetsock, (struct  sockaddr  *) &target, 
-			sizeof(target)) < 0) {
-		perror("target: connect");
-		exit(1);
-	    }
-
-	    if (dosyslog)
-		syslog(LOG_NOTICE, "connecting %s/%d to %s/%d",
-		       inet_ntoa(client.sin_addr), client.sin_port,
-		       target_ip, target.sin_port);
-	    /*
-	     * Double fork here so we don't have to wait later
-	     * This detaches us from our parent so that the parent
-	     * does not need to pick up dead kids later.
-	     */
-	    forkpid = fork();
-	    if (forkpid == 0){
-		forkpid = fork();
-		if (forkpid == 0){
-		    copyloop(clisock, targetsock, timeout);
-		    exit(0);	/* Exit after copy */
-		} else {
-		    exit(0);	/* Exit back to wait in parent */
-		}
-	    } else {
-		int status;
-
-		/* Wait for child (who has forked off grandchild) */
-		(void) wait(&status);
-	    }	    
-
-	    /* Close sockets to prevent confusion */
-	    close(clisock);
-	    close(targetsock);
-	}
+	while (1) 
+	     do_accept(servsock, &target);
     }
 }
 
