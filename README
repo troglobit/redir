@@ -1,3 +1,39 @@
+
+Redir v.1.0
+
+This version, titled 1.0, is a current running/stable version of redir which 
+is fundamentally identical to version 0.7, with the exception that it adds 
+--bind-addr, which can force it to bind to a specific address or interface.
+But, all things considered, it might as well be 1.0, as it's stable and done
+with.  The rest of this file is still valid, may as well read the rest of the
+readmes.
+
+I'm thinking of doing a 2.0 which never forks, but does one
+big-honking-select-loop, which probably wouldn't be much of a bother,
+and would save a good chunk of ram, but then an FD limit becomes quite
+a real possibility.  perhaps an #ifdef selecting the old or new code
+would help this...  though, really, this is a known problem with a lot
+of proxies, and it doesn't seem to hurt too bad.  depends on the
+MAX_FDS (or whatever that define is.  FD_MAX?) on your machine.
+
+Wow.  The authorship/maintnence for this thing has REALLY gotten mangled.  
+Credits should, logically, go to the following people:
+
+Nigel Metheringham <Nigel.Metheringham@ThePLAnet.net>
+	For taking the code I wrote and making it into a more stable 
+	sensible, and usable package.  
+Sam Creasey <sammy@users.qual.net>
+	Original author, but this package would be vastly inferior without 
+	Nigel's modifications.
+Thomas Osterried <thomas@x-berg.in-berlin.de>
+	Added the --bind-addr patch.
+
+8 August, 1998 - Sam Creasey <sammy@users.qual.net>
+
+Bug reports/patches/comments/etc please now to <sammy@users.qual.net>
+
+=======================================================================
+
 Redir v.0.7
 
 redir is a tcp port redirector for unix.

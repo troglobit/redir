@@ -20,7 +20,37 @@
  *      -- Sammy (sammy@freenet.akron.oh.us)
  */
 
-#define  VERSION "0.7"
+/* 980601: dl9sau
+ * added some nice new features:
+ *
+ *   --bind_addr=my.other.ip.address
+ *       forces to use my.other.ip.address for the outgoing connection
+ *   
+ *   you can also specify, that redir listens not on all IP addresses of
+ *   your system but only for the given one, i.e.:
+ *      if my host has the addresses
+ *        irc.thishost.my.domain  and  mail.thishost.my.domain
+ *      but you want that your users do connect for the irc redir service
+ *      only on irc.thishost.my.domain, then do it this way:
+ *        redir irc.fu-berlin.de irc.thishost.mydomain:6667 6667
+ *   my need was that:
+ *        addr1.first.domain  6667 redirects to irc.first.net  port 6667
+ *   and  addr2.second.domain 6667 redirects to irc.second.net port 6667
+ *   while addr1 and addr2 are the same maschine and the ports can be equal.
+ *
+ *  enjoy it!
+ *    - thomas  <thomas@x-berg.in-berlin.de>, <dl9sau@db0tud.ampr.org>
+ *
+ *  btw: i tried without success implementing code for the following scenario:
+ *    redir --force_addr irc.fu-berlin.de 6667 6667
+ *  if "--force_addr" is given and a user connects to my system, that address
+ *  of my system will be used on the outgoing connection that the user
+ *  connected to.
+ *  i was not successful to determine, to which of my addresses the user
+ *  has connected.
+ */
+
+#define  VERSION "1.0"
 
 #include <stdio.h>
 #include <string.h>
@@ -41,6 +71,8 @@
 extern int errno;
 int dodebug = 0;
 int dosyslog = 0;
+unsigned int reuse_addr = 1;
+char * bind_addr = NULL;
 
 #ifdef NEED_STRRCHR
 #define strrchr rindex
@@ -63,7 +95,7 @@ redir_usage(char *name)
 {
     fprintf(stderr,"usage:\n");
     fprintf(stderr, 
-	    "\t%s [options] [remote-host] listen_port connect_port\n", 
+	    "\t%s [options] [remote-host] [listen_addr:]listen_port connect_port\n", 
 	    name);
     fprintf(stderr, "\t%s --inetd [options] [remote-host] connect_port\n", name);
     fprintf(stderr, "\n\tOptions are:-\n");
@@ -72,6 +104,7 @@ redir_usage(char *name)
     fprintf(stderr, "\t\t--timeout=<n>\tset timeout to n seconds\n");
     fprintf(stderr, "\t\t--syslog=\tlog messages to syslog\n");
     fprintf(stderr, "\t\t--name=<str>\ttag syslog messages with 'str'\n");
+    fprintf(stderr, "\t\t--bind_addr=IP\tbind() outgoing IP to given addr\n");
     fprintf(stderr, "\n\tVersion %s - $Id$\n", VERSION);
     exit(2);
 }
@@ -81,13 +114,16 @@ parse_args(int argc,
 	   char * argv[],
 	   char ** target_addr,
 	   int * target_port,
+           char ** local_addr,
 	   int * local_port,
 	   int * timeout,
 	   int * dodebug,
 	   int * inetd,
-	   int * dosyslog)
+	   int * dosyslog,
+	   char ** bind_addr)
 {
     static struct option long_options[] = {
+	{"bind_addr", required_argument, 0, 'b'},
 	{"debug",    no_argument,       0, 'd'},
 	{"timeout",  required_argument, 0, 't'},
 	{"inetd",    no_argument,       0, 'i'},
@@ -101,10 +137,16 @@ parse_args(int argc,
     int opt;
     struct servent *portdesc;
     char * ident = NULL;
+    char *p;
+    char *p_port;
 
     while ((opt = getopt_long(argc, argv, "disn:t:", 
 			      long_options, &option_index)) != -1) {
 	switch (opt) {
+	case 'b':
+	    *bind_addr = optarg;
+	    break;
+
 	case 'd':
 	    (*dodebug)++;
 	    break;
@@ -133,6 +175,8 @@ parse_args(int argc,
 	}
     }
 
+    *local_addr = NULL;
+
     /* Check number of args */
     if (*inetd) {
 	if (((argc - optind) == 1) || ((argc - optind) == 2)) {
@@ -155,17 +199,26 @@ parse_args(int argc,
 	    exit(1);
 	}
     } else {
-	if (((argc - optind) == 2) || ((argc - optind) == 3)) {
+	 if (((argc - optind) == 2) || ((argc - optind) == 3)) {
 	    if ((argc - optind) == 3) {
 		*target_addr = argv[optind++];
 	    } else {
-		target_addr = NULL;
+		*target_addr = NULL;
 	    }
 
-	    if ((portdesc = getservbyname(argv[optind], "tcp")) != NULL) {
+	    if (p_port = strchr(argv[optind], ':')) {
+                if (p_port > argv[optind]+1) { 
+			*local_addr = strdup(argv[optind]);
+			for (p = *local_addr; *p && *p != ':' ; p++)
+				;
+			*p = '\0';
+		}
+		p_port++;
+            } else p_port = argv[optind];
+	    if ((portdesc = getservbyname(p_port, "tcp")) != NULL) {
 		*local_port = ntohs(portdesc->s_port);
 	    } else {
-		*local_port = atol(argv[optind]);
+		*local_port = atol(p_port);
 	    }
 	    optind++;
 
@@ -261,10 +314,9 @@ copyloop(int insock,
     }
     debug("Leaving main copyloop\n");
 
-
-    setsockopt(insock, SOL_SOCKET, SO_REUSEADDR, 1, sizeof(SO_REUSEADDR));
+    setsockopt(insock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
     setsockopt(insock, SOL_SOCKET, SO_LINGER, 0, sizeof(SO_LINGER)); 
-    setsockopt(outsock, SOL_SOCKET, SO_REUSEADDR, 1, sizeof(SO_REUSEADDR));
+    setsockopt(outsock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
     setsockopt(outsock, SOL_SOCKET, SO_LINGER, 0, sizeof(SO_LINGER)); 
 
     shutdown(insock,0);
@@ -287,22 +339,24 @@ int
 main(int argc, char *argv[])
 {
 
-    struct sockaddr_in target, peer;
+    struct sockaddr_in target, addr_out;
     char *target_addr;
     int target_port;
+    char *local_addr;
     int local_port;
     int timeout = 0;
     int inetd = 0;
     char * target_ip;
+    char * ip_to_target;
 
     debug("parse args\n");
-    parse_args(argc, argv, &target_addr, &target_port, &local_port,
-	       &timeout, &dodebug, &inetd, &dosyslog);
+    parse_args(argc, argv, &target_addr, &target_port, &local_addr, &local_port,
+	       &timeout, &dodebug, &inetd, &dosyslog, &bind_addr);
 
     /* Set up target */
     target.sin_family = AF_INET;
     target.sin_port = htons(target_port);
-    if (target_addr) {
+    if (target_addr != NULL) {
 	struct hostent *hp;
 
 	debug1("target is %s\n", target_addr);
@@ -320,6 +374,26 @@ main(int argc, char *argv[])
     debug1("target IP address is %s\n", target_ip);
     debug1("target port is %d\n", target_port);
 
+    /* Set up outgoing IP addr (optional);
+     * we have to wait for bind until targetsock = socket() is done
+     */
+    if (bind_addr) {
+	struct hostent *hp;
+
+	fprintf(stderr, "bind_addr is %s\n", bind_addr);
+    	addr_out.sin_family = AF_INET;
+    	addr_out.sin_port = 0;
+	if ((hp = gethostbyname(bind_addr)) == NULL) {
+	    fprintf(stderr, "%s: cannot resolve forced outgoing IP address.\n", bind_addr);
+	    exit(1);
+        }
+	memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
+
+        ip_to_target = strdup(inet_ntoa(addr_out.sin_addr));
+        debug1("IP address for target is %s\n", ip_to_target);
+    }
+           
+
     if (inetd) {
 	int targetsock;
 	struct sockaddr_in client;
@@ -335,6 +409,16 @@ main(int argc, char *argv[])
 	}
 
 
+	if (bind_addr) {
+	    /* this only makes sense if an outgoing IP addr has been forced;
+	     * at this point, we have a valid targetsock to bind() to.. */
+	     if (bind(targetsock, (struct  sockaddr  *) &addr_out, 
+		     sizeof(addr_out)) < 0) {
+	          perror("bind_addr: cannot bind to forcerd outgoing addr");
+	          exit(1);
+	     }
+	     debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
+        }
 	if (connect(targetsock, (struct sockaddr *) &target, 
 		    sizeof(target)) < 0) {
 	    perror("target: connect");
@@ -366,7 +450,19 @@ main(int argc, char *argv[])
 
 	server.sin_family = AF_INET;
 	server.sin_port = htons(local_port);
-	server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
+        if (local_addr) {
+	   struct hostent *hp;
+
+	   debug1("listening on %s\n", local_addr);
+	   if ((hp = gethostbyname(local_addr)) == NULL) {
+	     fprintf(stderr, "%s: cannot resolve hostname.\n", local_addr);
+	     exit(1);
+	   }
+	   memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
+        } else {
+		debug("local IP is default\n");
+		server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
+        }
 
 	/*
 	 * Try to bind the address to the socket.
@@ -378,7 +474,8 @@ main(int argc, char *argv[])
 	    exit(1);
 	}
 
-	setsockopt(servsock, SOL_SOCKET, SO_REUSEADDR, 1, sizeof(SO_REUSEADDR));
+	/*setsockopt(servsock, SOL_SOCKET, SO_REUSEADDR, 1, sizeof(SO_REUSEADDR));*/
+	setsockopt(servsock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
 	setsockopt(servsock, SOL_SOCKET, SO_LINGER, 0, sizeof(SO_LINGER)); 
 
 	/*
@@ -418,6 +515,16 @@ main(int argc, char *argv[])
 		exit(1);
 	    }
 
+	    if (bind_addr) {
+		/* this only makes sense if an outgoing IP addr has been forced;
+		 * at this point, we have a valid targetsock to bind() to.. */
+	    	if (bind(targetsock, (struct  sockaddr  *) &addr_out, 
+			sizeof(addr_out)) < 0) {
+	             perror("bind_addr: cannot bind to forcerd outgoing addr");
+	             exit(1);
+		}
+	        debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
+            }
 	    if (connect(targetsock, (struct  sockaddr  *) &target, 
 			sizeof(target)) < 0) {
 		perror("target: connect");
