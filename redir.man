@@ -17,6 +17,10 @@ redir \- redirect tcp connections
 .RB [ \--connect=host:port ]
 .I --lport=port
 .I --cport=port
+.RB [ \--bufsize=n ]
+.RB [ \--maxbandwidth=n ]
+.RB [ \--random_wait=n ]
+.RB [ \--wait_in_out=n ]
 .ll -8
 .br
 .B redir
@@ -30,6 +34,10 @@ redir \- redirect tcp connections
 .RB [ \--transproxy ]
 .RB [ \--connect=host:port ]
 .I --cport=port
+.RB [ \--bufsize=n ]
+.RB [ \--maxbandwidth=n ]
+.RB [ \--random_wait=n ]
+.RB [ \--wait_in_out=n ]
 .ll -8
 .br
 .SH DESCRIPTION
@@ -38,6 +46,7 @@ redirects tcp connections coming in to a local port to a specified
 address/port combination.
 .PP
 It may be run either from inetd or as a standalone daemon.
+Depending on how redir was compiled, not all options may be available.
 .SH OPTIONS
 .TP
 .B \--lport
@@ -90,6 +99,24 @@ Redirects connections through an HTTP proxy which supports the CONNECT
 command.  Specify the address and port of the proxy using --caddr and
 --cport.  --connect requires the hostname and port which the HTTP
 proxy will be asked to connect to.
+.TP
+.B \--bufsize n
+Set the bufsize (defaut 4096) in bytes. Can be used combined with
+--maxbandwidth or --random_wait to simulate a slow connection.
+.TP
+.B \--maxbandwidth n
+Reduce the bandwidth to be no more than n bits/sec.  The algorithme is
+basic, the goal is to simulate a slow connection, so there is no pic
+acceptance.
+.TP
+.B \--random_wait n
+Wait between 0 and 2 x n milliseconds before each "packet". A "packet" is
+a bloc of data read in one time by redir. A "packet" size is always less
+than the bufsize (see also --bufsize).
+.TP
+.B \--wait_in_out n
+Apply --maxbandwidth and --random_wait for input if n=1, output if n=2 and
+both if n=3.
 .SH "SEE ALSO"
 inetd(1)
 
