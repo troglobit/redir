@@ -802,8 +802,8 @@ do_accept(int servsock, struct sockaddr_in *target)
 #ifdef USE_TCP_WRAPPERS
 	request_init(&request, RQ_DAEMON, ident, RQ_FILE, clisock, 0);
 	sock_host(&request);
-	sock_hostname(&request);
-	sock_hostaddr(&request);
+	sock_hostname(request.client);
+	sock_hostaddr(request.client);
 
 	if (!hosts_access(&request)) {
 		refuse(&request);
@@ -1057,8 +1057,8 @@ main(int argc, char *argv[])
 #ifdef USE_TCP_WRAPPERS
 		request_init(&request, RQ_DAEMON, ident, RQ_FILE, 0, 0);
 		sock_host(&request);
-		sock_hostname(&request);
-		sock_hostaddr(&request);
+		sock_hostname(request.client);
+		sock_hostaddr(request.client);
 	
 		if (!hosts_access(&request))
 			refuse(&request);
