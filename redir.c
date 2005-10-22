@@ -233,7 +233,7 @@ redir_usage(char *name)
 #ifndef NO_SHAPER
         /* options for bandwidth */
         fprintf(stderr, "\t\t--bufsize=<octets>\tsize of the buffer\n");
-        fprintf(stderr, "\t\t--maxbandwidth=<bit-per-sec>\tlimit the bandwidth\n");
+        fprintf(stderr, "\t\t--max_bandwidth=<bit-per-sec>\tlimit the bandwidth\n");
         fprintf(stderr, "\t\t--random_wait=<millisec>\twait before each packet\n");
         fprintf(stderr, "\t\t--wait_in_out=<flag>\t1 wait for in, 2 out, 3 in&out\n");
         /* end options for bandwidth */

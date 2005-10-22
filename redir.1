@@ -18,7 +18,7 @@ redir \- redirect tcp connections
 .I --lport=port
 .I --cport=port
 .RB [ \--bufsize=n ]
-.RB [ \--maxbandwidth=n ]
+.RB [ \--max_bandwidth=n ]
 .RB [ \--random_wait=n ]
 .RB [ \--wait_in_out=n ]
 .ll -8
@@ -35,7 +35,7 @@ redir \- redirect tcp connections
 .RB [ \--connect=host:port ]
 .I --cport=port
 .RB [ \--bufsize=n ]
-.RB [ \--maxbandwidth=n ]
+.RB [ \--max_bandwidth=n ]
 .RB [ \--random_wait=n ]
 .RB [ \--wait_in_out=n ]
 .ll -8
@@ -102,9 +102,9 @@ proxy will be asked to connect to.
 .TP
 .B \--bufsize n
 Set the bufsize (defaut 4096) in bytes. Can be used combined with
---maxbandwidth or --random_wait to simulate a slow connection.
+--max_bandwidth or --random_wait to simulate a slow connection.
 .TP
-.B \--maxbandwidth n
+.B \--max_bandwidth n
 Reduce the bandwidth to be no more than n bits/sec.  The algorithme is
 basic, the goal is to simulate a slow connection, so there is no pic
 acceptance.
@@ -115,7 +115,7 @@ a bloc of data read in one time by redir. A "packet" size is always less
 than the bufsize (see also --bufsize).
 .TP
 .B \--wait_in_out n
-Apply --maxbandwidth and --random_wait for input if n=1, output if n=2 and
+Apply --max_bandwidth and --random_wait for input if n=1, output if n=2 and
 both if n=3.
 .SH "SEE ALSO"
 inetd(1)
