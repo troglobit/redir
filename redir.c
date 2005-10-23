@@ -598,10 +598,6 @@ copyloop(int insock,
 	/* Record start time */
 	start_time = (unsigned int) time(NULL);
 
-	/* Set up timeout */
-	timeout.tv_sec = timeout_secs;
-	timeout.tv_usec = 0;
-
 	/* file descriptor bits */
 	FD_ZERO(&iofds);
 	FD_SET(insock, &iofds);
@@ -618,14 +614,21 @@ copyloop(int insock,
 	while(1) {
 		(void) memcpy(&c_iofds, &iofds, sizeof(iofds));
 
+		/* Set up timeout, Linux returns seconds left in this structure
+		 * so we have to reset it before each select(). */
+		timeout.tv_sec = timeout_secs;
+		timeout.tv_usec = 0;
+
 
 		if (select(max_fd + 1,
 			   &c_iofds,
 			   (fd_set *)0,
 			   (fd_set *)0,
 			   (timeout_secs ? &timeout : NULL)) <= 0) {
-			/*	    syslog(LLEV,"connection timeout: %d sec",timeout.tv_sec);*/
-			break;
+		  if (dosyslog) {
+		    syslog(LOG_NOTICE,"connection timeout: %d sec",timeout_secs);
+		  }
+		  break;
 		}
 
 		if(FD_ISSET(insock, &c_iofds)) {
