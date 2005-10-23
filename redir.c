@@ -260,7 +260,7 @@ parse_args(int argc,
 #endif
 	   int *transproxy,
 #ifndef NO_SHAPER
-           unsigned int * bufsize,
+           unsigned int * bufsizeout,
            int * max_bandwidth,
            int * random_wait,
            int * wait_in_out,
@@ -367,7 +367,7 @@ parse_args(int argc,
 
 #ifndef NO_SHAPER
                 case 'z':
-                  *bufsize = (unsigned int)atol(optarg);
+                  *bufsizeout = (unsigned int)atol(optarg);
                   break;
  
                 case 'm':
@@ -594,7 +594,7 @@ copyloop(int insock,
 	unsigned long bytes_in = 0;
 	unsigned long bytes_out = 0;
 	unsigned int start_time, end_time;
-	char buf[bufsize];
+	char* buf = malloc(bufsize);
 
 	/* Record start time */
 	start_time = (unsigned int) time(NULL);
@@ -633,7 +633,7 @@ copyloop(int insock,
 		}
 
 		if(FD_ISSET(insock, &c_iofds)) {
-			if((bytes = read(insock, buf, sizeof(buf))) <= 0)
+			if((bytes = read(insock, buf, bufsize)) <= 0)
 				break;
 #ifndef NO_FTP
 			if (ftp & FTP_PORT)
@@ -648,7 +648,7 @@ copyloop(int insock,
 			bytes_out += bytes;
 		}
 		if(FD_ISSET(outsock, &c_iofds)) {
-			if((bytes = read(outsock, buf, sizeof(buf))) <= 0)
+			if((bytes = read(outsock, buf, bufsize)) <= 0)
 				break;
 			/* if we're correcting for PASV on ftp redirections, then
 			   fix buf and bytes to have the new address, among other
@@ -685,6 +685,7 @@ copyloop(int insock,
 		syslog(LOG_NOTICE, "disconnect %d secs, %ld in %ld out",
 		       (end_time - start_time), bytes_in, bytes_out);
 	}
+	free(buf);
 	return;
 }
 
