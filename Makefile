@@ -9,8 +9,8 @@ STR_CFLAGS = # -DNEED_STRRCHR -DNEED_STRDUP
 # if you would like support for TCP wrappers (and have libwrap.a
 # installed), remove these comments.
 
-WRAP_CFLAGS = # -DUSE_TCP_WRAPPERS 
-WRAP_LIBS = # -lwrap
+WRAP_CFLAGS = -DUSE_TCP_WRAPPERS 
+WRAP_LIBS = -lwrap
 
 # if your system needs any additional libraries (solaris, for example, 
 # needs the ones commented out below), edit this line.
