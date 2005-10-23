@@ -73,6 +73,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <time.h>
 #include <sys/wait.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -460,7 +461,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	int lport, rport;
 	int remip[4];
 	int localsock;
-	int socksize = sizeof(struct sockaddr_in);
+	size_t socksize = sizeof(struct sockaddr_in);
 
 	struct sockaddr_in newsession;
 	struct sockaddr_in sockname;
@@ -509,7 +510,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	if(getsockname(localsock, (struct sockaddr *)&sockname, &socksize) < 0) {
 		perror("getsockname");
 		if (dosyslog)
-			syslog(LOG_ERR, "getsockname failed: %m");
+			syslog(LOG_ERR, "getsockname failed: %s",strerror(errno));
 		exit(1);
 	}
 
@@ -562,7 +563,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	switch(fork())
 	{
      	case -1: /* Error */
-     		syslog(LOG_ERR, "Couldn't fork: %m");
+     		syslog(LOG_ERR, "Couldn't fork: %s",strerror(errno));
      		_exit(1);
      	case 0:  /* Child */
 	{
@@ -719,7 +720,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 	int clisock;
 	int targetsock;
 	struct sockaddr_in client;
-	int clientlen = sizeof(client);
+	size_t clientlen = sizeof(client);
 	int accept_errno;
      
 	debug("top of accept loop\n");
@@ -730,7 +731,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 		perror("server: accept");
 
 		if (dosyslog)
-			syslog(LOG_ERR, "accept failed: %m");
+			syslog(LOG_ERR, "accept failed: %s",strerror(errno));
 
 		/* determine if this error is fatal */
 		switch(accept_errno) {
@@ -764,7 +765,7 @@ do_accept(int servsock, struct sockaddr_in *target)
      		perror("(server) fork");
 
      		if (dosyslog)
-     			syslog(LOG_ERR, "(server) fork failed: %m");
+     			syslog(LOG_ERR, "(server) fork failed: %s",strerror(errno));
 
      		_exit(1);
      	case 0:  /* Child */
@@ -791,7 +792,7 @@ do_accept(int servsock, struct sockaddr_in *target)
      		perror("(child) fork");
 
      		if (dosyslog)
-     			syslog(LOG_ERR, "(child) fork failed: %m");
+     			syslog(LOG_ERR, "(child) fork failed: %s",strerror(errno));
 
      		_exit(1);
      	case 0:  /* Child */
@@ -822,7 +823,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 		perror("target: socket");
 	  
 		if (dosyslog)
-			syslog(LOG_ERR, "socket failed: %m");
+			syslog(LOG_ERR, "socket failed: %s",strerror(errno));
 		
 		_exit(1);
 	}
@@ -846,7 +847,7 @@ do_accept(int servsock, struct sockaddr_in *target)
    only be different if the input value is 0 (let the system pick a 
    port) */
 			if (dosyslog)
-				syslog(LOG_ERR, "bind failed: %m");
+				syslog(LOG_ERR, "bind failed: %s",strerror(errno));
 
 			_exit(1);
 		}
@@ -858,7 +859,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 		perror("target: connect");
 
 		if (dosyslog)
-			syslog(LOG_ERR, "bind failed: %m");
+			syslog(LOG_ERR, "bind failed: %s",strerror(errno));
 
 		_exit(1);
 	}
@@ -919,7 +920,7 @@ int bindsock(char *addr, int port, int fail)
 			perror("server: socket");
 
 			if (dosyslog)
-				syslog(LOG_ERR, "socket failed: %m");
+				syslog(LOG_ERR, "socket failed: %s",strerror(errno));
 
 			exit(1);
 		}
@@ -958,7 +959,7 @@ int bindsock(char *addr, int port, int fail)
 			perror("server: bind");
 
 			if (dosyslog)
-				syslog(LOG_ERR, "bind failed: %m");
+				syslog(LOG_ERR, "bind failed: %s",strerror(errno));
 
 			exit(1);
 		}
@@ -976,7 +977,7 @@ int bindsock(char *addr, int port, int fail)
 			perror("server: listen");
 
 			if (dosyslog)
-				syslog(LOG_ERR, "listen failed: %m");
+				syslog(LOG_ERR, "listen failed: %s",strerror(errno));
 
 			exit(1);
 		}
@@ -1055,7 +1056,7 @@ main(int argc, char *argv[])
 	if (inetd) {
 		int targetsock;
 		struct sockaddr_in client;
-		int client_size = sizeof(client);
+		size_t client_size = sizeof(client);
 
 #ifdef USE_TCP_WRAPPERS
 		request_init(&request, RQ_DAEMON, ident, RQ_FILE, 0, 0);
@@ -1075,7 +1076,7 @@ main(int argc, char *argv[])
 			perror("target: socket");
 
 			if (dosyslog)
-				syslog(LOG_ERR, "targetsock failed: %m");
+				syslog(LOG_ERR, "targetsock failed: %s",strerror(errno));
 
 			exit(1);
 		}
@@ -1093,7 +1094,7 @@ main(int argc, char *argv[])
 				perror("bind_addr: cannot bind to forcerd outgoing addr");
 				 
 				if (dosyslog)
-					syslog(LOG_ERR, "bind failed: %m");
+					syslog(LOG_ERR, "bind failed: %s",strerror(errno));
 				 
 				exit(1);
 			}
@@ -1105,7 +1106,7 @@ main(int argc, char *argv[])
 			perror("target: connect");
 
 			if (dosyslog)
-				syslog(LOG_ERR, "connect failed: %m");
+				syslog(LOG_ERR, "connect failed: %s",strerror(errno));
 
 			exit(1);
 		}

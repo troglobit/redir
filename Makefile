@@ -32,7 +32,7 @@ CC = gcc
 # if your system lacks getopt_long, remove the comment from this line
 OBJS = redir.o $(GETOPT_OBJS)
 
-CFLAGS = -O2 -Wall $(STR_CFLAGS) $(WRAP_CFLAGS) $(EXTRA_CFLAGS)
+CFLAGS = -O2 -Wall --pedantic $(STR_CFLAGS) $(WRAP_CFLAGS) $(EXTRA_CFLAGS)
 LDFLAGS = -s
 
 # solaris, and others, may also need these libraries to link
