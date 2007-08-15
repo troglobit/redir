@@ -33,7 +33,7 @@ CC = gcc
 OBJS = redir.o $(GETOPT_OBJS)
 
 CFLAGS = -O2 -Wall --pedantic $(STR_CFLAGS) $(WRAP_CFLAGS) $(EXTRA_CFLAGS)
-LDFLAGS = -s
+LDFLAGS = # -s
 
 # solaris, and others, may also need these libraries to link
 # also edit here if you're using the TCP wrappers code
