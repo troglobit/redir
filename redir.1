@@ -1,43 +1,42 @@
-.PU
 .TH REDIR 1 local
 .SH NAME
-redir \- redirect tcp connections
+redir - redirect tcp connections
 .SH SYNOPSIS
 .ll +8
 .B redir
-.RB [ \--laddr=incoming.ip.address ]
-.RB [ \--caddr=host ]
-.RB [ \--debug ]
-.RB [ \--syslog 
-.RB [ \--name=str ] 
-.RB [ \--timeout=n ]
-.RB [ \--bind_addr=my.other.ip.address ]
-.RB [ \--ftp=type ]
-.RB [ \--transproxy ]
-.RB [ \--connect=host:port ]
-.I --lport=port
-.I --cport=port
-.RB [ \--bufsize=n ]
-.RB [ \--max_bandwidth=n ]
-.RB [ \--random_wait=n ]
-.RB [ \--wait_in_out=n ]
+.RB [ \-\-laddr=incoming.ip.address ]
+.RB [ \-\-caddr=host ]
+.RB [ \-\-debug ]
+.RB [ \-\-syslog ]
+.RB [ \-\-name=str ] 
+.RB [ \-\-timeout=n ]
+.RB [ \-\-bind_addr=my.other.ip.address ]
+.RB [ \-\-ftp=type ]
+.RB [ \-\-transproxy ]
+.RB [ \-\-connect=host:port ]
+.I \-\-lport=port
+.I \-\-cport=port
+.RB [ \-\-bufsize=n ]
+.RB [ \-\-max_bandwidth=n ]
+.RB [ \-\-random_wait=n ]
+.RB [ \-\-wait_in_out=n ]
 .ll -8
 .br
 .B redir
-.RB \--inetd
-.RB [ \--caddr=host ]
-.RB [ \--debug ]
-.RB [ \--syslog 
-.RB [ \--name=str ] 
-.RB [ \--timeout=n ]
-.RB [ \--ftp=type ]
-.RB [ \--transproxy ]
-.RB [ \--connect=host:port ]
-.I --cport=port
-.RB [ \--bufsize=n ]
-.RB [ \--max_bandwidth=n ]
-.RB [ \--random_wait=n ]
-.RB [ \--wait_in_out=n ]
+.RB \-\-inetd
+.RB [ \-\-caddr=host ]
+.RB [ \-\-debug ]
+.RB [ \-\-syslog ]
+.RB [ \-\-name=str ] 
+.RB [ \-\-timeout=n ]
+.RB [ \-\-ftp=type ]
+.RB [ \-\-transproxy ]
+.RB [ \-\-connect=host:port ]
+.I \-\-cport=port
+.RB [ \-\-bufsize=n ]
+.RB [ \-\-max_bandwidth=n ]
+.RB [ \-\-random_wait=n ]
+.RB [ \-\-wait_in_out=n ]
 .ll -8
 .br
 .SH DESCRIPTION
@@ -49,74 +48,73 @@ It may be run either from inetd or as a standalone daemon.
 Depending on how redir was compiled, not all options may be available.
 .SH OPTIONS
 .TP
-.B \--lport
+.B \-\-lport
 Specifies port to listen for connections on (when not running from inetd)
 .TP
-.B \--laddr
+.B \-\-laddr
 IP address to bind to when listening for connections (when not
 running from inetd) 
 .TP
-.B \--cport
+.B \-\-cport
 Specifies port to connect to.
 .TP
-.B \--caddr
+.B \-\-caddr
 Specifies remote host to connect to. (localhost if omitted)
 .TP
-.B \--inetd
+.B \-\-inetd
 Run as a process started from inetd, with the connection passed as stdin
 and stdout on startup.
 .TP
-.B \--debug
+.B \-\-debug
 Write debug output to stderr or syslog.
 .TP
-.B \--name
+.B \-\-name
 Specify program name to be used for TCP wrapper checks and syslog logging.
 .TP
-.B --timeout
+.B \-\-timeout
 Timeout and close the connection after n seconds of inactivity.
 .TP
-.B \--syslog
+.B \-\-syslog
 Log information to syslog.
 .TP
-.B \--bind_addr
+.B \-\-bind_addr
 Forces redir to pick a specific address/interface to bind to when it listens 
 for incoming connections. 
 .TP
-.B \--ftp
+.B \-\-ftp
 When using redir for an FTP server, this will cause redir to also
 redirect ftp connections.  Type should be specified as either "port",
 "pasv", or "both", to specify what type of FTP connection to handle.
-Note that --transproxy often makes one or the other (generally port)
+Note that \-\-transproxy often makes one or the other (generally port)
 undesirable. 
 .TP
-.B \--transproxy
+.B \-\-transproxy
 On a linux system with transparent proxying enabled, causes redir to
 make connections appear as if they had come from their true origin.
 (see transproxy.txt in the source archive)
 .TP
-.B \--connect
+.B \-\-connect
 Redirects connections through an HTTP proxy which supports the CONNECT 
-command.  Specify the address and port of the proxy using --caddr and
---cport.  --connect requires the hostname and port which the HTTP
+command.  Specify the address and port of the proxy using \-\-caddr and
+\-\-cport.  \-\-connect requires the hostname and port which the HTTP
 proxy will be asked to connect to.
 .TP
-.B \--bufsize n
+.B \-\-bufsize n
 Set the bufsize (defaut 4096) in bytes. Can be used combined with
---max_bandwidth or --random_wait to simulate a slow connection.
+\-\-max_bandwidth or \-\-random_wait to simulate a slow connection.
 .TP
 .B \--max_bandwidth n
 Reduce the bandwidth to be no more than n bits/sec.  The algorithme is
 basic, the goal is to simulate a slow connection, so there is no pic
 acceptance.
 .TP
-.B \--random_wait n
+.B \-\-random_wait n
 Wait between 0 and 2 x n milliseconds before each "packet". A "packet" is
 a bloc of data read in one time by redir. A "packet" size is always less
-than the bufsize (see also --bufsize).
+than the bufsize (see also \-\-bufsize).
 .TP
 .B \--wait_in_out n
-Apply --max_bandwidth and --random_wait for input if n=1, output if n=2 and
+Apply \-\-max_bandwidth and \-\-random_wait for input if n=1, output if n=2 and
 both if n=3.
 .SH "SEE ALSO"
 inetd(1)
-
