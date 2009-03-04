@@ -90,8 +90,8 @@
 /* let's set up some globals... */
 int dodebug = 0;
 int dosyslog = 0;
-unsigned char reuse_addr = 1;
-unsigned char linger_opt = 0;
+int reuse_addr = 1; /* allow address reuse */
+struct linger linger_opt = { 0, 0}; /* do not linger */
 char * bind_addr = NULL;
 struct sockaddr_in addr_out;
 int timeout = 0;
@@ -906,6 +906,7 @@ int bindsock(char *addr, int port, int fail)
 
 	int servsock;
 	struct sockaddr_in server;
+	int ret;
      
 	/*
 	 * Get a socket to work with.  This socket will
@@ -944,8 +945,30 @@ int bindsock(char *addr, int port, int fail)
 		server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 	}
      
-	setsockopt(servsock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
-	setsockopt(servsock, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(SO_LINGER)); 
+	ret = setsockopt(servsock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
+	if (ret != 0) {
+		if(fail) {
+			return -1;
+		}
+		else {
+			perror("server: setsockopt (SO_REUSEADDR)");
+			if (dosyslog)
+				syslog(LOG_ERR, "setsockopt failed with SO_REUSEADDR: %s",strerror(errno));
+			exit(1);
+		}
+	}
+	ret = setsockopt(servsock, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(linger_opt)); 
+	if (ret != 0) {
+		if(fail) {
+			return -1;
+		}
+		else {
+			perror("server: setsockopt (SO_LINGER)");
+			if (dosyslog)
+				syslog(LOG_ERR, "setsockopt failed with SO_LINGER: %s",strerror(errno));
+			exit(1);
+		}
+	}
      
 	/*
 	 * Try to bind the address to the socket.
