@@ -27,13 +27,13 @@ EXTRA_CFLAGS = # -DNO_SHAPER -DNO_FTP
 ### end of user configuration section
 
 # redir requires gcc.  if you're lucky, another compiler might work.
-CC = gcc
+#CC = gcc
 
 # if your system lacks getopt_long, remove the comment from this line
 OBJS = redir.o $(GETOPT_OBJS)
 
-CFLAGS = -O2 -Wall --pedantic $(STR_CFLAGS) $(WRAP_CFLAGS) $(EXTRA_CFLAGS)
-LDFLAGS = # -s
+#CFLAGS = -O2 -Wall --pedantic $(STR_CFLAGS) $(WRAP_CFLAGS) $(EXTRA_CFLAGS)
+#LDFLAGS = # -s
 
 # solaris, and others, may also need these libraries to link
 # also edit here if you're using the TCP wrappers code
