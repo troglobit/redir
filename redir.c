@@ -461,7 +461,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	int lport, rport;
 	int remip[4];
 	int localsock;
-	size_t socksize = sizeof(struct sockaddr_in);
+	socklen_t socksize = sizeof(struct sockaddr_in);
 
 	struct sockaddr_in newsession;
 	struct sockaddr_in sockname;
@@ -721,7 +721,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 	int clisock;
 	int targetsock;
 	struct sockaddr_in client;
-	size_t clientlen = sizeof(client);
+	socklen_t clientlen = sizeof(client);
 	int accept_errno;
      
 	debug("top of accept loop\n");
@@ -1080,7 +1080,7 @@ main(int argc, char *argv[])
 	if (inetd) {
 		int targetsock;
 		struct sockaddr_in client;
-		size_t client_size = sizeof(client);
+		socklen_t  client_size = sizeof(client);
 
 #ifdef USE_TCP_WRAPPERS
 		request_init(&request, RQ_DAEMON, ident, RQ_FILE, 0, 0);
