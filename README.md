@@ -1,12 +1,13 @@
+A TCP port redirector for UNIX
+==============================
 
-Redir v.2.2.1
-
-Redir is a port redirector.  It's functionally basically consists of
-the ability to listen for TCP connections on a given port, and, when
-it recieves a connection, to then connect to a given destination
+Redir is a port redirector.  It's functionally basically consists of the
+ability to listen for TCP connections on a given port, and, when it
+recieves a connection, to then connect to a given destination
 address/port, and pass data between them.  It finds most of its
 applications in traversing firewalls, but, of course, there are other
-uses.  Consult the man page, or run with no options for usage information.
+uses.  Consult the man page, or run with no options for usage
+information.
 
 Please check the Makefile to see if you need to make any changes to
 get it to compile correctly on your particular unix flavor.
@@ -15,21 +16,22 @@ If you would like to remove support for some extended options (for the
 sake of speed, code size, whatever), change the EXTRA_CFLAGS line in
 the makefile.  The following are supported:
 
- -DNO_SHAPER (doesn't compile in traffic shaping code)
- -DNO_FTP (doesn't compile in FTP redirection support)
-
-
-Please submit patches/comments, etc to: Sam Creasey (sammy@oh.verio.com).
+    -DNO_SHAPER (doesn't compile in traffic shaping code)
+    -DNO_FTP (doesn't compile in FTP redirection support)
 
 -----
 
-I'm thinking of eventually doing a version which never forks, but does one
-big-honking-select-loop, which probably wouldn't be much of a bother,
-and would save a good chunk of ram, but then an FD limit becomes quite
-a real possibility.  perhaps an #ifdef selecting the old or new code
-would help this...  though, really, this is a known problem with a lot
-of proxies, and it doesn't seem to hurt too bad.  depends on the
-MAX_FDS (or whatever that define is.  FD_MAX?) on your machine.
+I'm thinking of eventually doing a version which never forks, but does
+one big-honking-select-loop, which probably wouldn't be much of a
+bother, and would save a good chunk of ram, but then an FD limit becomes
+quite a real possibility.  perhaps an #ifdef selecting the old or new
+code would help this...  though, really, this is a known problem with a
+lot of proxies, and it doesn't seem to hurt too bad.  depends on the
+`MAX_FDS` (or whatever that define is. `FD_MAX`?) on your machine.
+
+
+Authors
+-------
 
 Wow.  The authorship/maintnence for this thing has REALLY gotten mangled.  
 Credits should, logically, go to the following people:
@@ -42,12 +44,6 @@ Sam Creasey <sammy@oh.verio.com>
 	Nigel's modifications.
 Thomas Osterried <thomas@x-berg.in-berlin.de>
 	Added the --bind-addr patch.
-
-22 June, 1999 - Sam Creasey <sammy@oh.verio.com>
-
-Bug reports/patches/comments/etc please now to <sammy@oh.verio.com>
-
-Current versions can be found at http://oh.verio.com/~sammy/hacks
 
 redir is distributed under the terms of the GNU Public Licence,
 version 2 or later, which was distributed with this source archive in
