@@ -1,0 +1,14 @@
+# Travis CI integration -- https://travis-ci.org/troglobit/finit
+# Defaults to GNU GCC and autotools: ./configure && make && make test
+language: c
+
+# Use docker for quicker builds, it now allows https://docs.travis-ci.com/user/apt/
+sudo: false
+
+# Test build only with both GCC for the moment
+compiler:
+  - gcc
+
+# Custom build script for the time being, no "make test" yet
+script:
+  - make
