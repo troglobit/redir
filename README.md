@@ -1,7 +1,8 @@
 A TCP port redirector for UNIX
 ==============================
+[![Travis Status][]][Travis] [![Coverity Status]][Coverity Scan]
 
-Redir is a port redirector for UNIX.  It can run under inetd or
+[Redir][home] is a port redirector for UNIX.  It can run under inetd or
 standalone (in which case it handles multiple connections).  It is 8 bit
 clean, not limited to line mode, is small and light.  If you want access
 control run it under xinetd, or inetd with TCP wrappers.
@@ -26,3 +27,9 @@ try the following options to configure:
 
 Redir is distributed under the terms of the GNU Public Licence, version
 2 or later, distributed with this source archive in the file COPYING.
+
+[home]:            http://sammy.net/~sammy/hacks/
+[Travis]:          https://travis-ci.org/troglobit/redir
+[Travis Status]:   https://travis-ci.org/troglobit/redir.png?branch=master
+[Coverity Scan]:   https://scan.coverity.com/projects/8740
+[Coverity Status]: https://scan.coverity.com/projects/8740/badge.svg
