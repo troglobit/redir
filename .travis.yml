@@ -8,6 +8,7 @@ sudo: false
 # Test build only with both GCC for the moment
 compiler:
   - gcc
+  - clang
 
 # Custom build script for the time being, no "make test" yet
 script:
