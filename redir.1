@@ -1,120 +1,129 @@
-.TH REDIR 1 local
-.SH NAME
-redir - redirect tcp connections
-.SH SYNOPSIS
-.ll +8
-.B redir
-.RB [ \-\-laddr=incoming.ip.address ]
-.RB [ \-\-caddr=host ]
-.RB [ \-\-debug ]
-.RB [ \-\-syslog ]
-.RB [ \-\-name=str ] 
-.RB [ \-\-timeout=n ]
-.RB [ \-\-bind=my.other.ip.address ]
-.RB [ \-\-ftp=type ]
-.RB [ \-\-transproxy ]
-.RB [ \-\-connect=host:port ]
-.I \-\-lport=port
-.I \-\-cport=port
-.RB [ \-\-bufsize=n ]
-.RB [ \-\-max-bandwidth=n ]
-.RB [ \-\-random-wait=n ]
-.RB [ \-\-wait-in-out=n ]
-.ll -8
-.br
-.B redir
-.RB \-\-inetd
-.RB [ \-\-caddr=host ]
-.RB [ \-\-debug ]
-.RB [ \-\-syslog ]
-.RB [ \-\-name=str ] 
-.RB [ \-\-timeout=n ]
-.RB [ \-\-ftp=type ]
-.RB [ \-\-transproxy ]
-.RB [ \-\-connect=host:port ]
-.I \-\-cport=port
-.RB [ \-\-bufsize=n ]
-.RB [ \-\-max-bandwidth=n ]
-.RB [ \-\-random-wait=n ]
-.RB [ \-\-wait-in-out=n ]
-.ll -8
-.br
-.SH DESCRIPTION
-.I Redir
-redirects tcp connections coming in to a local port to a specified
+.Dd 01 May, 2016
+.Dt REDIR 1 SMM
+.Os
+.Sh NAME
+.Nm redir
+.Nd redirect TCP connections
+.Sh SYNOPSIS
+.Nm
+.Op Fl -laddr=IP
+.Op Fl -lport=PORT
+.Op Fl -caddr=HOST
+.Op Fl -cport=PORT
+.Op Fl -debug
+.Op Fl -syslog
+.Op Fl -name=STR
+.Op Fl -timeout=SEC
+.Op Fl -bind=IP
+.Op Fl -ftp=TYPE
+.Op Fl -transproxy
+.Op Fl -connect=HOST:PORT
+.Op Fl -bufsize=BYTES
+.Op Fl -max-bandwidth=BPS
+.Op Fl -random-wait=MSEC
+.Op Fl -wait-in-out=<1,2,3>
+.Pp
+.Nm
+.Fl -inetd
+.Op Fl -caddr=HOST
+.Op Fl -cport=PORT
+.Op Fl -debug
+.Op Fl -syslog
+.Op Fl -name=STR
+.Op Fl -timeout=SEC
+.Op Fl -ftp=TYPE
+.Op Fl -transproxy
+.Op Fl -connect=HOST:PORT
+.Op Fl -bufsize=BYTES
+.Op Fl -max-bandwidth=BPS
+.Op Fl -random-wait=MSEC
+.Op Fl -wait-in-out=<1,2,3>
+.Sh DESCRIPTION
+.Nm
+redirects TCP connections coming in to a local port to a specified
 address/port combination.
-.PP
+.Pp
 It may be run either from inetd or as a standalone daemon.
 Depending on how redir was compiled, not all options may be available.
-.SH OPTIONS
-.TP
-.B \-\-lport
-Specifies port to listen for connections on (when not running from inetd)
-.TP
-.B \-\-laddr
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl a, Fl -laddr=IP
 IP address to bind to when listening for connections (when not
 running from inetd) 
-.TP
-.B \-\-cport
-Specifies port to connect to.
-.TP
-.B \-\-caddr
+.It Fl l, Fl -lport=PORT
+Specifies port to listen for connections on (when not running from
+inetd)
+.It Fl c, Fl -caddr=HOST
 Specifies remote host to connect to. (localhost if omitted)
-.TP
-.B \-\-inetd
-Run as a process started from inetd, with the connection passed as stdin
-and stdout on startup.
-.TP
-.B \-\-debug
+.It Fl r, Fl -cport=PORT
+Specifies port to connect to.
+.It Fl i, Fl -inetd
+Run as a process started from
+.Xr inetd 1 ,
+with the connection passed as stdin and stdout on startup.
+.It Fl d, Fl -debug
 Write debug output to stderr or syslog.
-.TP
-.B \-\-name
-Specify program name to be used for TCP wrapper checks and syslog logging.
-.TP
-.B \-\-timeout
-Timeout and close the connection after n seconds of inactivity.
-.TP
-.B \-\-syslog
-Log information to syslog.
-.TP
-.B \-\-bind IP
-Forces redir to pick a specific address/interface to bind to when it listens 
-for incoming connections. 
-.TP
-.B \-\-ftp
-When using redir for an FTP server, this will cause redir to also
-redirect ftp connections.  Type should be specified as either "port",
-"pasv", or "both", to specify what type of FTP connection to handle.
-Note that \-\-transproxy often makes one or the other (generally port)
-undesirable. 
-.TP
-.B \-\-transproxy
-On a linux system with transparent proxying enabled, causes redir to
-make connections appear as if they had come from their true origin.
-(see transproxy.txt in the source archive)
-.TP
-.B \-\-connect
-Redirects connections through an HTTP proxy which supports the CONNECT 
-command.  Specify the address and port of the proxy using \-\-caddr and
-\-\-cport.  \-\-connect requires the hostname and port which the HTTP
-proxy will be asked to connect to.
-.TP
-.B \-\-bufsize BYTES
-Set the bufsize (defaut 4096) in bytes. Can be used combined with
-\-\-max-bandwidth or \-\-random-wait to simulate a slow connection.
-.TP
-.B \-\-max-bandwidth BPS
-Reduce the bandwidth to be no more than n bits/sec.  The algorithme is
-basic, the goal is to simulate a slow connection, so there is no pic
+.It Fl n, Fl -name=STR
+Specify program name to be used for TCP wrapper checks and syslog
+logging.
+.It Fl t, Fl -timeout=SEC
+Timeout and close the connection after SEC seconds of inactivity.
+.It Fl s, Fl -syslog
+Log messages to syslog.
+.It Fl b, Fl -bind=IP
+Forces
+.Nm
+to pick a specific address/interface to bind to when it listens for
+incoming connections.
+.It Fl f, -ftp=TYPE
+When using
+.Nm
+for an FTP server, this will cause redir to also redirect FTP
+connections.  Type should be specified as either "port", "pasv", or
+"both", to specify what type of FTP connection to handle.  Note that
+.Fl -transproxy
+often makes one or the other (generally port) undesirable.
+.It Fl p, Fl -transproxy
+On a linux system with transparent proxying enabled, causes
+.Nm
+to make connections appear as if they had come from their true origin.
+See the file transproxy.txt in the distribution for details.
+.It Fl x, Fl -connect
+Redirects connections through an HTTP proxy which supports the CONNECT
+command.  Specify the address and port of the proxy using
+.Fl -caddr
+and
+.Fl -cport .
+.Fl -connect
+requires the hostname and port which the HTTP proxy will be asked to
+connect to.
+.It Fl z, Fl -bufsize=BYTES
+Set the bufsize (defaut 4096) in bytes.  Can be used combined with
+.Fl -max-bandwidth
+or
+.Fl -random-wait
+to simulate a slow connection.
+.It Fl w, Fl -max-bandwidth=BPS
+Reduce the bandwidth to be no more than BPS bits/sec.  The algorithm is
+basic, the goal is to simulate a slow connection, so there is no peak
 acceptance.
-.TP
-.B \-\-random-wait MSEC
-Wait between 0 and 2 x n milliseconds before each "packet". A "packet" is
-a bloc of data read in one time by redir. A "packet" size is always less
-than the bufsize (see also \-\-bufsize).
-.TP
-.B \-\-wait-in-out <1,2,3>
-Apply \-\-max-bandwidth and \-\-random-wait for input if n=1, output if n=2 and
-both if n=3.
-.SH "SEE ALSO"
-inetd(1)
+.It Fl w, Fl -random-wait=MSEC
+Wait between 0 and 2 x n milliseconds before each "packet".  A "packet"
+is a block of data read in one time by redir.  A "packet" size is always
+less than the bufsize (see also
+.Fl -bufsize )
+.It Fl o, Fl -wait-in-out=<1,2,3>
+Apply
+.Fl -max-bandwidth
+and
+.Fl -random-wait
+for input(1), output(2), or both(3).
+.El
+.Sh SEE ALSO
+.Xr inetd 1
+.Xr uredir 1
+.Sh AUTHORS
+.Nm
+is written by Nigel Metheringham and Sam Creasey, with contributions
+from many others.  It is currently being maintained at GitHub by Joachim
+Nilsson.
