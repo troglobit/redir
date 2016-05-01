@@ -10,16 +10,16 @@ redir - redirect tcp connections
 .RB [ \-\-syslog ]
 .RB [ \-\-name=str ] 
 .RB [ \-\-timeout=n ]
-.RB [ \-\-bind_addr=my.other.ip.address ]
+.RB [ \-\-bind=my.other.ip.address ]
 .RB [ \-\-ftp=type ]
 .RB [ \-\-transproxy ]
 .RB [ \-\-connect=host:port ]
 .I \-\-lport=port
 .I \-\-cport=port
 .RB [ \-\-bufsize=n ]
-.RB [ \-\-max_bandwidth=n ]
-.RB [ \-\-random_wait=n ]
-.RB [ \-\-wait_in_out=n ]
+.RB [ \-\-max-bandwidth=n ]
+.RB [ \-\-random-wait=n ]
+.RB [ \-\-wait-in-out=n ]
 .ll -8
 .br
 .B redir
@@ -34,9 +34,9 @@ redir - redirect tcp connections
 .RB [ \-\-connect=host:port ]
 .I \-\-cport=port
 .RB [ \-\-bufsize=n ]
-.RB [ \-\-max_bandwidth=n ]
-.RB [ \-\-random_wait=n ]
-.RB [ \-\-wait_in_out=n ]
+.RB [ \-\-max-bandwidth=n ]
+.RB [ \-\-random-wait=n ]
+.RB [ \-\-wait-in-out=n ]
 .ll -8
 .br
 .SH DESCRIPTION
@@ -77,7 +77,7 @@ Timeout and close the connection after n seconds of inactivity.
 .B \-\-syslog
 Log information to syslog.
 .TP
-.B \-\-bind_addr
+.B \-\-bind IP
 Forces redir to pick a specific address/interface to bind to when it listens 
 for incoming connections. 
 .TP
@@ -99,22 +99,22 @@ command.  Specify the address and port of the proxy using \-\-caddr and
 \-\-cport.  \-\-connect requires the hostname and port which the HTTP
 proxy will be asked to connect to.
 .TP
-.B \-\-bufsize n
+.B \-\-bufsize BYTES
 Set the bufsize (defaut 4096) in bytes. Can be used combined with
-\-\-max_bandwidth or \-\-random_wait to simulate a slow connection.
+\-\-max-bandwidth or \-\-random-wait to simulate a slow connection.
 .TP
-.B \--max_bandwidth n
+.B \-\-max-bandwidth BPS
 Reduce the bandwidth to be no more than n bits/sec.  The algorithme is
 basic, the goal is to simulate a slow connection, so there is no pic
 acceptance.
 .TP
-.B \-\-random_wait n
+.B \-\-random-wait MSEC
 Wait between 0 and 2 x n milliseconds before each "packet". A "packet" is
 a bloc of data read in one time by redir. A "packet" size is always less
 than the bufsize (see also \-\-bufsize).
 .TP
-.B \--wait_in_out n
-Apply \-\-max_bandwidth and \-\-random_wait for input if n=1, output if n=2 and
+.B \-\-wait-in-out <1,2,3>
+Apply \-\-max-bandwidth and \-\-random-wait for input if n=1, output if n=2 and
 both if n=3.
 .SH "SEE ALSO"
 inetd(1)

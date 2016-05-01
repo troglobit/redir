@@ -13,8 +13,8 @@ firewalls, but, of course, there are other uses.  Consult the man page,
 or run with no options for usage information.
 
     Usage:
-            redir --lport=<n> --cport=<n> [options]
-            redir --inetd --cport=<n>
+            redir --lport=PORT --cport=PORT [options]
+            redir --inetd      --cport=PORT
 
 Redir comes with a GNU configure script which you can use to adapt the
 build to your needs.  If you would like to remove support for some

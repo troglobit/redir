@@ -92,9 +92,10 @@ int dodebug = 0;
 int dosyslog = 0;
 int reuse_addr = 1; /* allow address reuse */
 struct linger linger_opt = { 0, 0}; /* do not linger */
-char * bind_addr = NULL;
+char *bind_addr = NULL;
 struct sockaddr_in addr_out;
 int timeout = 0;
+extern char *__progname;
 
 #ifndef NO_FTP
 int ftp = 0;
@@ -112,7 +113,7 @@ int wait_out=1;
 
 unsigned int bufsize=4096;
 char *connect_str = NULL;	/* CONNECT string passed to proxy */
-char * ident = NULL;
+char *ident = NULL;
 
 #ifndef NO_FTP
 /* what ftp to redirect */
@@ -143,150 +144,144 @@ int bindsock(char *addr, int port, int fail);
    it's the "in" socket and false if it's the "out" socket */
 static inline ssize_t redir_write (int fd, const void *buf, size_t size, int in)
 {
-  ssize_t result;
-  int wait;
+	ssize_t result;
+	int wait;
 
-  wait=in ? wait_in : wait_out;
-  if( random_wait > 0 && wait) {
-    fd_set empty;
-    struct timeval waitbw; /* for bandwidth */
-    int rand_time;
+	wait = in ? wait_in : wait_out;
+	if (random_wait > 0 && wait) {
+		fd_set empty;
+		struct timeval waitbw; /* for bandwidth */
+		int rand_time;
     
-    FD_ZERO(&empty);
+		FD_ZERO(&empty);
 
-    rand_time=rand()%(random_wait*2);
-    debug1("random wait: %u\n", rand_time);
-    waitbw.tv_sec=rand_time/1000;
-    waitbw.tv_usec=rand_time%1000;
+		rand_time = rand() % (random_wait * 2);
+		debug1("random wait: %u\n", rand_time);
+		waitbw.tv_sec=rand_time/1000;
+		waitbw.tv_usec=rand_time%1000;
 
-    select (1, &empty, NULL, NULL, &waitbw);
-  }
+		select (1, &empty, NULL, NULL, &waitbw);
+	}
 
-  result=write(fd, buf, size);
+	result = write(fd, buf, size);
 
-  if( max_bandwidth > 0 && wait) {
-    fd_set empty;
-    unsigned long bits;
-    struct timeval waitbw; /* for bandwidth */
+	if (max_bandwidth > 0 && wait) {
+		fd_set empty;
+		unsigned long bits;
+		struct timeval waitbw; /* for bandwidth */
 
-    FD_ZERO(&empty);
+		FD_ZERO(&empty);
 
-      /* wait to be sure tu be below the allowed bandwidth */
-    bits=size*8;
-    debug1("bandwidth wait: %lu\n", 1000*bits/max_bandwidth);
-    waitbw.tv_sec=bits/max_bandwidth;
-    waitbw.tv_usec=(1000*(bits%max_bandwidth))/max_bandwidth;
+		/* wait to be sure tu be below the allowed bandwidth */
+		bits = size * 8;
+		debug1("bandwidth wait: %lu\n", 1000 * bits / max_bandwidth);
+		waitbw.tv_sec  = bits/max_bandwidth;
+		waitbw.tv_usec = (1000 * (bits % max_bandwidth)) / max_bandwidth;
 
-    select (1, &empty, NULL, NULL, &waitbw);
-  }
+		select(1, &empty, NULL, NULL, &waitbw);
+	}
 
-  return result;
+	return result;
 }
 #else
 /* macro if traffic shaper is disabled */
 #define redir_write(fd, buf, size, in) write(fd, buf,size)
 #endif
 
-
-#ifdef NEED_STRDUP
-char *
-strdup(char * str)
+static int usage(int code)
 {
-	char * result;
-
-	if (result = (char *) malloc(strlen(str) + 1))
-		strcpy(result, str);
-
-	return result;
-}
-#endif /* NEED_STRDUP */
-
-void
-redir_usage(char *name)
-{
-	fprintf(stderr,"usage:\n");
-	fprintf(stderr, 
-		"\t%s --lport=<n> --cport=<n> [options]\n", 
-		name);
-	fprintf(stderr, "\t%s --inetd --cport=<n>\n", name);
-	fprintf(stderr, "\n\tOptions are:-\n");
-	fprintf(stderr, "\t\t--lport=<n>\t\tport to listen on\n");
-	fprintf(stderr, "\t\t--laddr=IP\t\taddress of interface to listen on\n");
-	fprintf(stderr, "\t\t--cport=<n>\t\tport to connect to\n");
-	fprintf(stderr, "\t\t--caddr=<host>\t\tremote host to connect to\n");
-	fprintf(stderr, "\t\t--inetd\t\trun from inetd\n");
-	fprintf(stderr, "\t\t--debug\t\toutput debugging info\n");
-	fprintf(stderr, "\t\t--timeout=<n>\tset timeout to n seconds\n");
-	fprintf(stderr, "\t\t--syslog\tlog messages to syslog\n");
-	fprintf(stderr, "\t\t--name=<str>\ttag syslog messages with 'str'\n");
-	fprintf(stderr, "\t\t--connect=<str>\tCONNECT string passed to proxy server\n");
+	fprintf(stderr,"\n"
+		"Usage:\n"
+		"       %s --lport=PORT --cport=PORT [options]\n"
+		"       %s --inetd      --cport=PORT\n", __progname, __progname);
+	fprintf(stderr, "\n"
+		"Options:\n"
+		"  -h,--help               Show this help text\n"
+		"  -l,--lport=PORT         Port to listen on\n"
+		"  -a,--laddr=IP           Address of interface to listen on\n"
+		"  -r,--cport=PORT         Remote port to connect to\n"
+		"  -c,--caddr=HOST         Remote host to connect to\n"
+		"  -i,--inetd              Run from inetd\n"
+		"  -d,--debug              Enable debugging info\n"
+		"  -t,--timeout=SEC        Set timeout to SEC seconds\n"
+		"  -s,--syslog             Log messages to syslog\n"
+		"  -n,--name=STR           Tag syslog messages with STR\n"
+		"  -x,--connect=STR        CONNECT string passed to proxy server\n"
 #ifdef USE_TCP_WRAPPERS
-	fprintf(stderr, "\t\t            \tAlso used as service name for TCP wrappers\n");
-#endif /* USE_TCP_WRAPPERS */
-	fprintf(stderr, "\t\t--bind_addr=IP\tbind() outgoing IP to given addr\n");
+		"                          Also used as service name for TCP wrappers\n"
+#endif
+		"  -b,--bind=IP            Force specific IP to bind() to when listening\n"
+		"                          for incoming connections\n"
 
 #ifndef NO_FTP
-	fprintf(stderr, "\t\t--ftp=<type>\t\tredirect ftp connections\n");
-	fprintf(stderr, "\t\t\twhere type is either port, pasv, both\n");
+		"  -f,--ftp=TYPE           Redirect ftp connections.  Where type is\n"
+		"                          one of: 'port', 'pasv', or 'both'\n"
 #endif
-
-	fprintf(stderr, "\t\t--transproxy\trun in linux's transparent proxy mode\n");
+		"  -p,--transproxy         run in linux's transparent proxy mode\n"
 #ifndef NO_SHAPER
-        /* options for bandwidth */
-        fprintf(stderr, "\t\t--bufsize=<octets>\tsize of the buffer\n");
-        fprintf(stderr, "\t\t--max_bandwidth=<bit-per-sec>\tlimit the bandwidth\n");
-        fprintf(stderr, "\t\t--random_wait=<millisec>\twait before each packet\n");
-        fprintf(stderr, "\t\t--wait_in_out=<flag>\t1 wait for in, 2 out, 3 in&out\n");
-        /* end options for bandwidth */
+		"  -z,--bufsize=BYTES      size of the traffic shaping buffer\n"
+		"  -m,--max-bandwidth=BPS  limit the bandwidth\n"
+		"  -w,--random-wait=MSEC   Wait MSEC milliseconds before each packet\n"
+		"  -o,--wait-in-out=FLAG   1 wait for in, 2 out, 3 in&out\n"
 #endif
-	fprintf(stderr, "\n\tVersion %s.\n", PACKAGE_VERSION);
-	exit(2);
+		"  -v,--version            Show program version\n"
+		"\n");
+
+	return code;
 }
 
-void
-parse_args(int argc,
-	   char * argv[],
-	   char ** target_addr,
-	   int * target_port,
-           char ** local_addr,
-	   int * local_port,
-	   int * timeout,
-	   int * dodebug,
-	   int * inetd,
-	   int * dosyslog,
-	   char ** bind_addr,
+static void parse_args(int argc, char *argv[],
+	   char **target_addr,
+	   int   *target_port,
+           char **local_addr,
+	   int   *local_port,
+	   int   *timeout,
+	   int   *dodebug,
+	   int   *inetd,
+	   int   *dosyslog,
+	   char **bind_addr,
 #ifndef NO_FTP
-	   int * ftp,
+	   int   *ftp,
 #endif
-	   int *transproxy,
+	   int   *transproxy,
 #ifndef NO_SHAPER
-           unsigned int * bufsizeout,
-           int * max_bandwidth,
-           int * random_wait,
-           int * wait_in_out,
+           unsigned int *bufsizeout,
+           int *max_bandwidth,
+           int *random_wait,
+           int *wait_in_out,
 #endif
 	   char **connect_str)
 {
 	static struct option long_options[] = {
-		{"lport", required_argument, 0, 'l'},
-		{"laddr", required_argument, 0, 'a'},
-		{"cport", required_argument, 0, 'r'},
-		{"caddr", required_argument, 0, 'c'},
-		{"bind_addr", required_argument, 0, 'b'},
-		{"debug",    no_argument,       0, 'd'},
-		{"timeout",  required_argument, 0, 't'},
-		{"inetd",    no_argument,       0, 'i'},
-		{"ident",    required_argument, 0, 'n'},
-		{"name",     required_argument, 0, 'n'},
-		{"syslog",   no_argument,       0, 's'},
-		{"ftp",      required_argument,       0, 'f'},
-		{"transproxy", no_argument,     0, 'p'},
-		{"connect", required_argument, 0, 'x'},
-                {"bufsize",  required_argument,       0, 'z'},
-                {"max_bandwidth",  required_argument,       0, 'm'},
-                {"random_wait",  required_argument,       0, 'w'},
-                {"wait_in_out",  required_argument,       0, 'o'},
-		{0,0,0,0}		/* End marker */
+		{"help",          no_argument,       0, 'h'},
+		{"lport",         required_argument, 0, 'l'},
+		{"laddr",         required_argument, 0, 'a'},
+		{"cport",         required_argument, 0, 'r'},
+		{"caddr",         required_argument, 0, 'c'},
+		{"bind_addr",     required_argument, 0, 'b'},
+		{"bind",          required_argument, 0, 'b'},
+		{"debug",         no_argument,       0, 'd'},
+		{"timeout",       required_argument, 0, 't'},
+		{"inetd",         no_argument,       0, 'i'},
+		{"ident",         required_argument, 0, 'n'},
+		{"syslog",        no_argument,       0, 's'},
+		{"name",          required_argument, 0, 'n'},
+		{"connect",       required_argument, 0, 'x'},
+#ifndef NO_FTP
+		{"ftp",           required_argument, 0, 'f'},
+#endif
+		{"transproxy",    no_argument,       0, 'p'},
+#ifndef NO_SHAPER
+                {"bufsize",       required_argument, 0, 'z'},
+                {"max_bandwidth", required_argument, 0, 'm'}, /* compat */
+                {"max-bandwidth", required_argument, 0, 'm'},
+                {"random_wait",   required_argument, 0, 'w'}, /* compat */
+                {"random-wait",   required_argument, 0, 'w'},
+                {"wait_in_out",   required_argument, 0, 'o'}, /* compat */
+                {"wait-in-out",   required_argument, 0, 'o'},
+#endif
+		{"version",       no_argument,       0, 'v'},
+		{0, 0, 0, 0}
 	};
 	
 	int option_index = 0;
@@ -304,7 +299,7 @@ parse_args(int argc,
 	*target_port = 0;
 	*local_port = 0;
 
-	while ((opt = getopt_long(argc, argv, "disfpn:t:b:a:l:r:c:x:z:m:w:o:", 
+	while ((opt = getopt_long(argc, argv, "dhisfpn:t:b:a:l:r:c:x:z:m:w:o:v",
 				  long_options, &option_index)) != -1) {
 		switch (opt) {
 		case 'x':
@@ -334,6 +329,9 @@ parse_args(int argc,
 			(*dodebug)++;
 			break;
 
+		case 'h':
+			exit(usage(0));
+
 		case 't':
 			*timeout = atol(optarg);
 			break;
@@ -354,10 +352,8 @@ parse_args(int argc,
 #ifndef NO_FTP	    
 		case 'f':
 			ftp_type = optarg;
-			if(!ftp_type) {
-				redir_usage(argv[0]);
-				exit(1);
-			}
+			if (!ftp_type)
+				exit(usage(1));
 			break;
 #endif	     
 
@@ -367,49 +363,44 @@ parse_args(int argc,
 
 #ifndef NO_SHAPER
                 case 'z':
-                  *bufsizeout = (unsigned int)atol(optarg);
-                  break;
+			*bufsizeout = (unsigned int)atol(optarg);
+			break;
  
                 case 'm':
-                  *max_bandwidth = atol(optarg);
-                  break;
+			*max_bandwidth = atol(optarg);
+			break;
  
                 case 'w':
-                  *random_wait = atol(optarg);
-                  break;
+			*random_wait = atol(optarg);
+			break;
  
                 case 'o':
-                  *wait_in_out = atol(optarg);
-                  wait_in=*wait_in_out & 1;
-                  wait_out=*wait_in_out & 2;
-                  break;
-#endif 
-		default:
-			redir_usage(argv[0]);
-			exit(1);
+			*wait_in_out = atol(optarg);
+			wait_in=*wait_in_out & 1;
+			wait_out=*wait_in_out & 2;
 			break;
+#endif
+		case 'v':
+			fprintf(stderr, "%s\n", PACKAGE_VERSION);
+			exit(0);
+
+		default:
+			exit(usage(1));
 		}
 	}
 
-	if(tport == NULL)
-	{
-		redir_usage(argv[0]);
-		exit(1);
-	}
+	if (tport == NULL)
+		exit(usage(1));
 
-	if ((portdesc = getservbyname(tport, "tcp")) != NULL) {
+	if ((portdesc = getservbyname(tport, "tcp")) != NULL)
 		*target_port = ntohs(portdesc->s_port);
-	} else {
+	else
 		*target_port = atol(tport);
-	}
     
 	/* only check local port if not running from inetd */
-	if(!(*inetd)) {
-		if(lport == NULL)
-		{
-			redir_usage(argv[0]);
-			exit(1);
-		}
+	if (!(*inetd)) {
+		if (lport == NULL)
+			exit(usage(1));
 	 
 		if ((portdesc = getservbyname(lport, "tcp")) != NULL) 
 			*local_port = ntohs(portdesc->s_port);
@@ -418,32 +409,27 @@ parse_args(int argc,
 	} /* if *inetd */
 
 	if (!ident) {
-		if ((ident = (char *) strrchr(argv[0], '/'))) {
+		if ((ident = (char *) strrchr(argv[0], '/')))
 			ident++;
-		} else {
+		else
 			ident = argv[0];
-		}
 	}
 
 #ifndef NO_FTP
 	/* some kind of ftp being forwarded? */
-	if(ftp_type) {
-		if(!strncasecmp(ftp_type, "port", 4)) 
+	if (ftp_type) {
+		if (!strncasecmp(ftp_type, "port", 4)) 
 			*ftp = FTP_PORT;
-		else if(!strncasecmp(ftp_type, "pasv", 4))
+		else if (!strncasecmp(ftp_type, "pasv", 4))
 			*ftp = FTP_PASV;
-		else if(!strncasecmp(ftp_type, "both", 4))
+		else if (!strncasecmp(ftp_type, "both", 4))
 			*ftp = FTP_PORT | FTP_PASV;
-		else {
-			redir_usage(argv[0]);
-			exit(1);
-		}
+		else
+			exit(usage(1));
 	}
 #endif	      
     
 	openlog(ident, LOG_PID, LOG_DAEMON);
-
-	return;
 }
 
 #ifndef NO_FTP
@@ -469,7 +455,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	if (ftpsrv == 0)
 	{
 		/* is this a port commando ? */
-		if(strncmp(buf, "PORT", 4)) {
+		if (strncmp(buf, "PORT", 4)) {
 			redir_write(send, buf, (*bytes), REDIR_OUT);
 			return;
 		}
@@ -480,7 +466,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 		       &remip[2], &remip[3], &rporthi, &rportlo);
 	} else {
 		/* is this a passive mode return ? */
-		if(strncmp(buf, "227", 3)) {
+		if (strncmp(buf, "227", 3)) {
 			redir_write(send, buf, (*bytes), REDIR_OUT);
 			return;
 		}
@@ -493,7 +479,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	}
     
 	/* get the outside interface so we can listen */
-	if(getsockname(send, (struct sockaddr *)&sockname, &socksize) != 0) {
+	if (getsockname(send, (struct sockaddr *)&sockname, &socksize) != 0) {
 		perror("getsockname");
 		exit(1);
 	}
@@ -507,7 +493,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 
 	
 	/* get the real info */
-	if(getsockname(localsock, (struct sockaddr *)&sockname, &socksize) < 0) {
+	if (getsockname(localsock, (struct sockaddr *)&sockname, &socksize) < 0) {
 		perror("getsockname");
 		if (dosyslog)
 			syslog(LOG_ERR, "getsockname failed: %s",strerror(errno));
@@ -520,7 +506,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	lportlo=lport & 0xff;
 
 	/* check to see if we bound */
-	if(localsock == -1) {
+	if (localsock == -1) {
 		fprintf(stderr, "ftp: unable to bind new listening address\n");
 		exit(1);
 	}
@@ -581,10 +567,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 #endif
 
 
-void
-copyloop(int insock, 
-	 int outsock,
-	 int timeout_secs)
+static void copyloop(int insock, int outsock, int timeout_secs)
 {
 	fd_set iofds;
 	fd_set c_iofds;
@@ -632,8 +615,8 @@ copyloop(int insock,
 		  break;
 		}
 
-		if(FD_ISSET(insock, &c_iofds)) {
-			if((bytes = read(insock, buf, bufsize)) <= 0)
+		if (FD_ISSET(insock, &c_iofds)) {
+			if ((bytes = read(insock, buf, bufsize)) <= 0)
 				break;
 #ifndef NO_FTP
 			if (ftp & FTP_PORT)
@@ -643,22 +626,22 @@ copyloop(int insock,
 				ftp_clean(outsock, buf, &bytes,0); 
 			else
 #endif
-				if(redir_write(outsock, buf, bytes, REDIR_OUT) != bytes)
+				if (redir_write(outsock, buf, bytes, REDIR_OUT) != bytes)
 					break;
 			bytes_out += bytes;
 		}
-		if(FD_ISSET(outsock, &c_iofds)) {
-			if((bytes = read(outsock, buf, bufsize)) <= 0)
+		if (FD_ISSET(outsock, &c_iofds)) {
+			if ((bytes = read(outsock, buf, bufsize)) <= 0)
 				break;
 			/* if we're correcting for PASV on ftp redirections, then
 			   fix buf and bytes to have the new address, among other
 			   things */
 #ifndef NO_FTP
-			if(ftp & FTP_PASV)
+			if (ftp & FTP_PASV)
 				ftp_clean(insock, buf, &bytes,1);
 			else 
 #endif
-				if(redir_write(insock, buf, bytes, REDIR_IN) != bytes)
+				if (redir_write(insock, buf, bytes, REDIR_IN) != bytes)
 					break;
 			bytes_in += bytes;
 		}
@@ -829,7 +812,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 		_exit(1);
 	}
 
-	if(transproxy) {
+	if (transproxy) {
 		memcpy(&addr_out, &client, sizeof(struct sockaddr_in));
 		addr_out.sin_port = 0;
 	}
@@ -886,7 +869,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 
 #ifndef NO_SHAPER
         /* initialise random number if necessary */
-        if( random_wait > 0 ) {
+        if ( random_wait > 0 ) {
           srand(getpid());
         }
 #endif
@@ -915,7 +898,7 @@ int bindsock(char *addr, int port, int fail)
 	 */
      
 	if ((servsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		if(fail) {
+		if (fail) {
 			return -1;
 		}
 		else {
@@ -947,7 +930,7 @@ int bindsock(char *addr, int port, int fail)
      
 	ret = setsockopt(servsock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
 	if (ret != 0) {
-		if(fail) {
+		if (fail) {
 			return -1;
 		}
 		else {
@@ -959,7 +942,7 @@ int bindsock(char *addr, int port, int fail)
 	}
 	ret = setsockopt(servsock, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(linger_opt)); 
 	if (ret != 0) {
-		if(fail) {
+		if (fail) {
 			return -1;
 		}
 		else {
@@ -976,7 +959,7 @@ int bindsock(char *addr, int port, int fail)
      
 	if (bind(servsock, (struct  sockaddr  *) &server, 
 		 sizeof(server)) < 0) {
-		if(fail) {
+		if (fail) {
 			close(servsock);
 			return -1;
 		} else {
@@ -994,7 +977,7 @@ int bindsock(char *addr, int port, int fail)
 	 */
      
 	if (listen(servsock, 10) < 0) {
-		if(fail) {
+		if (fail) {
 			close(servsock);
 			return -1;
 		} else {
@@ -1010,8 +993,7 @@ int bindsock(char *addr, int port, int fail)
 	return servsock;
 }
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 
 	struct sockaddr_in target;
@@ -1020,8 +1002,8 @@ main(int argc, char *argv[])
 	char *local_addr;
 	int local_port;
 	int inetd = 0;
-	char * target_ip;
-	char * ip_to_target;
+	char *target_ip;
+	char *ip_to_target;
 
 	debug("parse args\n");
 	parse_args(argc, argv, &target_addr, &target_port, &local_addr, 
@@ -1105,7 +1087,7 @@ main(int argc, char *argv[])
 			exit(1);
 		}
 
-		if(transproxy) {
+		if (transproxy) {
 			memcpy(&addr_out, &client, sizeof(struct sockaddr_in));
 			addr_out.sin_port = 0;
 		}
@@ -1120,7 +1102,7 @@ main(int argc, char *argv[])
 				if (dosyslog)
 					syslog(LOG_ERR, "bind failed: %s",strerror(errno));
 				 
-				exit(1);
+				return 1;
 			}
 			debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
 		}
@@ -1132,7 +1114,7 @@ main(int argc, char *argv[])
 			if (dosyslog)
 				syslog(LOG_ERR, "connect failed: %s",strerror(errno));
 
-			exit(1);
+			return 1;
 		}
 
 		if (dosyslog) {
@@ -1146,7 +1128,7 @@ main(int argc, char *argv[])
 	} else {
 		int servsock;
 	
-		if(local_addr)
+		if (local_addr)
 			servsock = bindsock(local_addr, local_port, 0);
 		else
 			servsock = bindsock(NULL, local_port, 0);
@@ -1156,15 +1138,11 @@ main(int argc, char *argv[])
 		 * will be connected to the client.  client will
 		 * contain the address of the client.
 		 */
-
 		while (1) 
 			do_accept(servsock, &target);
 	}
 
 	/* this should really never be reached */
 
-	exit(0);
-
+	return 0;
 }
-
-
