@@ -61,7 +61,7 @@
  *   - Emmanuel Chantréau <echant@maretmanu.org>
  */
 
-#define  VERSION "2.3"
+#include "config.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -239,7 +239,7 @@ redir_usage(char *name)
         fprintf(stderr, "\t\t--wait_in_out=<flag>\t1 wait for in, 2 out, 3 in&out\n");
         /* end options for bandwidth */
 #endif
-	fprintf(stderr, "\n\tVersion %s.\n", VERSION);
+	fprintf(stderr, "\n\tVersion %s.\n", PACKAGE_VERSION);
 	exit(2);
 }
 
