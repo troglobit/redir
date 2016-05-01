@@ -9,4 +9,16 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_HEADER_STDC
 
+AC_ARG_WITH(libwrap,
+	AS_HELP_STRING([--with-libwrap=DIR], [use libwrap (rooted in DIR), default: yes]),
+	[with_libwrap=$withval], [with_libwrap=yes])
+AS_IF([test "x$with_libwrap" != "xno"],[
+	AS_IF([test -d "$with_libwrap"],[
+	    CPPFLAGS="$CPPFLAGS -I${with_libwrap}/include"
+	    LDFLAGS="$LDFLAGS -L${with_libwrap}/"
+	])
+	AC_CHECK_LIB(wrap, request_init,, with_libwrap=no)
+	AC_CHECK_HEADER([tcpd.h],, with_libwrap=no)
+])
+
 AC_OUTPUT
