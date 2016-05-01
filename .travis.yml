@@ -27,16 +27,16 @@ addons:
     notification_email: troglobit@gmail.com
     build_command_prepend: "./autogen.sh && ./configure"
     build_command:      "make"
-    branch_pattern:     master
+    branch_pattern:     dev
 
 # Custom build script for the time being, no "make test" yet
 script:
   - ./autogen.sh
-  - ./configure --prefix=/tmp
+  - ./configure --prefix=
   - make clean
   - make -j5 V=1
-  - make install-strip
-  - tree /tmp
-  - ldd /tmp/bin/redir
-  - size /tmp/bin/redir
-  - /tmp/bin/redir -h
+  - DESTDIR=/tmp/tok make install-strip
+  - tree /tmp/tok
+  - ldd /tmp/tok/bin/redir
+  - size /tmp/tok/bin/redir
+  - /tmp/tok/bin/redir -h
