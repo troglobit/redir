@@ -1,4 +1,11 @@
 -----
+Changes for 2.3
+-----
+
+2.3 integrates all (most) of Debian's patches and is mostly a checkpoint
+release by the new maintainer, Joachim Nilsson.
+
+-----
 Changes for 2.2.1
 -----
 

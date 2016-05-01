@@ -61,7 +61,7 @@
  *   - Emmanuel Chantréau <echant@maretmanu.org>
  */
 
-#define  VERSION "2.2.1"
+#define  VERSION "2.3"
 
 #include <stdio.h>
 #include <unistd.h>
