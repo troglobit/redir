@@ -1,5 +1,5 @@
 AC_INIT([redir], [2.4-dev], [https://github.com/troglobit/redir/issues])
-AM_INIT_AUTOMAKE([1.11 foreign])
+AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 
 AC_CONFIG_SRCDIR([redir.c])
 AC_CONFIG_HEADER([config.h])
@@ -18,6 +18,7 @@ AC_ARG_ENABLE(ftp,
 AC_ARG_WITH(libwrap,
 	AS_HELP_STRING([--with-libwrap=DIR], [use libwrap (rooted in DIR), default: yes]),
 	[with_libwrap=$withval], [with_libwrap=yes])
+
 AS_IF([test "x$with_libwrap" != "xno"],[
 	AS_IF([test -d "$with_libwrap"],[
 	    CPPFLAGS="$CPPFLAGS -I${with_libwrap}/include"
