@@ -12,6 +12,9 @@ AC_HEADER_STDC
 AC_ARG_ENABLE(shaping,
         AS_HELP_STRING([--disable-shaping], [Disable traffic shaping support]))
 
+AC_ARG_ENABLE(ftp,
+        AS_HELP_STRING([--disable-ftp], [Disable FTP redirection support]))
+
 AC_ARG_WITH(libwrap,
 	AS_HELP_STRING([--with-libwrap=DIR], [use libwrap (rooted in DIR), default: yes]),
 	[with_libwrap=$withval], [with_libwrap=yes])
@@ -26,5 +29,8 @@ AS_IF([test "x$with_libwrap" != "xno"],[
 
 AS_IF([test "x$enable_shaping" != "xno"],enable_shaping="yes",[
 	AC_DEFINE(NO_SHAPER, 1, [Disable traffic shaping])])
+
+AS_IF([test "x$enable_ftp" != "xno"],enable_ftp="yes",[
+	AC_DEFINE(NO_FTP, 1, [Disable FTP support])])
 
 AC_OUTPUT
