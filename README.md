@@ -26,9 +26,3 @@ try the following options to configure:
 
 Redir is distributed under the terms of the GNU Public Licence, version
 2 or later, distributed with this source archive in the file COPYING.
-
-The files in the getopt/ directory are GNU source code distributed under
-the same license.  These particular files were copied from the GNU
-package gawk-3.0.3, because it happened to be sitting on my drive at the
-time.
-
