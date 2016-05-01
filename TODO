@@ -1,0 +1,9 @@
+I'm thinking of eventually doing a version which never forks, but does
+one big-honking-select-loop, which probably wouldn't be much of a
+bother, and would save a good chunk of ram, but then an FD limit becomes
+quite a real possibility.  perhaps an #ifdef selecting the old or new
+code would help this...  though, really, this is a known problem with a
+lot of proxies, and it doesn't seem to hurt too bad.  depends on the
+`MAX_FDS` (or whatever that define is. `FD_MAX`?) on your machine.
+
+	    -- Sam Creasey <sammy@oh.verio.com>

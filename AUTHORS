@@ -1,0 +1,11 @@
+Wow.  The authorship/maintnence for this thing has REALLY gotten mangled.
+Credits should, logically, go to the following people:
+
+Nigel Metheringham <Nigel.Metheringham@ThePLAnet.net>
+	For taking the code I wrote and making it into a more stable
+	sensible, and usable package.
+Sam Creasey <sammy@oh.verio.com>
+	Original author, but this package would be vastly inferior without
+	Nigel's modifications.
+Thomas Osterried <thomas@x-berg.in-berlin.de>
+	Added the --bind-addr patch.
