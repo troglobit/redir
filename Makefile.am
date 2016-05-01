@@ -1,7 +1,7 @@
 bin_PROGRAMS    = redir
 redir_SOURCES   = redir.c
 dist_man1_MANS  = redir.1
-doc_DATA        = README.md COPYING
+doc_DATA        = README.md
 EXTRA_DIST      = $(doc_DATA)
 
 ## Target to run when building a release
