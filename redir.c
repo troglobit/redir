@@ -875,37 +875,35 @@ do_accept(int servsock, struct sockaddr_in *target)
 	exit(0);	/* Exit after copy */
 }
 
-/* bind to a new socket, we do this out here because passive-fixups
-   are going to call it too, and there's no sense dupliciting the
-   code. */
-/* fail is true if we should just return a -1 on error, false if we
-   should bail. */
-
+/*
+ * bind to a new socket, we do this out here because passive-fixups
+ * are going to call it too, and there's no sense dupliciting the
+ * code.
+ *
+ * fail is true if we should just return a -1 on error, false if we
+ * should bail.
+ */
 int bindsock(char *addr, int port, int fail) 
 {
 
-	int servsock;
+	int ret, sd;
 	struct sockaddr_in server;
-	int ret;
      
 	/*
 	 * Get a socket to work with.  This socket will
 	 * be in the Internet domain, and will be a
 	 * stream socket.
 	 */
-     
-	if ((servsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		if (fail) {
+	sd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sd < 0) {
+		if (fail)
 			return -1;
-		}
-		else {
-			perror("server: socket");
 
-			if (dosyslog)
-				syslog(LOG_ERR, "socket failed: %s",strerror(errno));
+		perror("server: socket");
+		if (dosyslog)
+			syslog(LOG_ERR, "socket failed: %s", strerror(errno));
 
-			exit(1);
-		}
+		exit(1);
 	}
 
 	memset(&server, 0, sizeof(server));
@@ -925,69 +923,64 @@ int bindsock(char *addr, int port, int fail)
 		server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 	}
      
-	ret = setsockopt(servsock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
+	ret = setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
 	if (ret != 0) {
 		if (fail) {
+			close(sd);
 			return -1;
 		}
-		else {
-			perror("server: setsockopt (SO_REUSEADDR)");
-			if (dosyslog)
-				syslog(LOG_ERR, "setsockopt failed with SO_REUSEADDR: %s",strerror(errno));
-			exit(1);
-		}
+
+		perror("server: setsockopt (SO_REUSEADDR)");
+		if (dosyslog)
+			syslog(LOG_ERR, "setsockopt failed with SO_REUSEADDR: %s", strerror(errno));
+		exit(1);
 	}
-	ret = setsockopt(servsock, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(linger_opt)); 
+
+	ret = setsockopt(sd, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(linger_opt)); 
 	if (ret != 0) {
 		if (fail) {
+			close(sd);
 			return -1;
 		}
-		else {
-			perror("server: setsockopt (SO_LINGER)");
-			if (dosyslog)
-				syslog(LOG_ERR, "setsockopt failed with SO_LINGER: %s",strerror(errno));
-			exit(1);
-		}
+
+		perror("server: setsockopt (SO_LINGER)");
+		if (dosyslog)
+			syslog(LOG_ERR, "setsockopt failed with SO_LINGER: %s", strerror(errno));
+		exit(1);
 	}
      
 	/*
 	 * Try to bind the address to the socket.
 	 */
-     
-	if (bind(servsock, (struct  sockaddr  *) &server, 
-		 sizeof(server)) < 0) {
+	if (bind(sd, (struct sockaddr *)&server, sizeof(server)) < 0) {
 		if (fail) {
-			close(servsock);
+			close(sd);
 			return -1;
-		} else {
-			perror("server: bind");
-
-			if (dosyslog)
-				syslog(LOG_ERR, "bind failed: %s",strerror(errno));
-
-			exit(1);
 		}
+
+		perror("server: bind");
+		if (dosyslog)
+			syslog(LOG_ERR, "bind failed: %s", strerror(errno));
+		exit(1);
 	}
      
 	/*
 	 * Listen on the socket.
 	 */
-     
-	if (listen(servsock, 10) < 0) {
+	if (listen(sd, 10) < 0) {
 		if (fail) {
-			close(servsock);
+			close(sd);
 			return -1;
-		} else {
-			perror("server: listen");
-
-			if (dosyslog)
-				syslog(LOG_ERR, "listen failed: %s",strerror(errno));
-
-			exit(1);
 		}
+
+		perror("server: listen");
+		if (dosyslog)
+			syslog(LOG_ERR, "listen failed: %s", strerror(errno));
+
+		exit(1);
 	}
      
-	return servsock;
+	return sd;
 }
 
 int main(int argc, char *argv[])
