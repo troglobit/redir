@@ -1000,6 +1000,7 @@ int main(int argc, char *argv[])
                    &connect_str);
 
 	/* Set up target */
+	memset(&target, 0, sizeof(target));
 	target.sin_family = AF_INET;
 	target.sin_port = htons(target_port);
 	if (target_addr != NULL) {
