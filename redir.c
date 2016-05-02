@@ -698,15 +698,15 @@ void
 do_accept(int servsock, struct sockaddr_in *target)
 {
 
-	int clisock;
+	int clisock, status;
 	int targetsock;
 	struct sockaddr_in client;
 	socklen_t clientlen = sizeof(client);
 	int accept_errno;
      
 	debug("top of accept loop\n");
-	if ((clisock = accept(servsock, (struct  sockaddr  *) &client, 
-			      &clientlen)) < 0) {
+	clisock = accept(servsock, (struct sockaddr *)&client, &clientlen);
+	if (clisock < 0) {
 
 		accept_errno = errno;
 		perror("server: accept");
@@ -752,17 +752,12 @@ do_accept(int servsock, struct sockaddr_in *target)
      	case 0:  /* Child */
      		break;
      	default: /* Parent */
-     	{
-     		int status;
-	  
      		/* Wait for child (who has forked off grandchild) */
      		(void) wait(&status);
 
      		/* Close sockets to prevent confusion */
-     		close(clisock);
-	
+		close(clisock);
      		return;
-     	}
 	}
 
 	/* We are now the first child. Fork again and exit */
@@ -800,7 +795,6 @@ do_accept(int servsock, struct sockaddr_in *target)
 #endif /* USE_TCP_WRAPPERS */
 
 	if ((targetsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-	  
 		perror("target: socket");
 	  
 		if (dosyslog)
@@ -820,13 +814,12 @@ do_accept(int servsock, struct sockaddr_in *target)
 		/* also, if we're in transparent proxy mode, this option
 		   never makes sense */
 
-		if (bind(targetsock, (struct  sockaddr  *) &addr_out, 
-			 sizeof(struct sockaddr_in)) < 0) {
+		if (bind(targetsock, (struct  sockaddr  *) &addr_out, sizeof(struct sockaddr_in)) < 0) {
 			perror("bind_addr: cannot bind to forcerd outgoing addr");
 
-/* the port parameter fetch the really port we are listening, it should
-   only be different if the input value is 0 (let the system pick a 
-   port) */
+			/* the port parameter fetch the really port we are listening,
+			 * it should only be different if the input value is 0 (let
+			 * the system pick a port) */
 			if (dosyslog)
 				syslog(LOG_ERR, "bind failed: %s", strerror(errno));
 
@@ -835,8 +828,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 		debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
 	}
 
-	if (connect(targetsock, (struct  sockaddr  *) target, 
-		    sizeof(struct sockaddr_in)) < 0) {
+	if (connect(targetsock, (struct  sockaddr  *) target, sizeof(struct sockaddr_in)) < 0) {
 		perror("target: connect");
 
 		if (dosyslog)
@@ -846,14 +838,11 @@ do_accept(int servsock, struct sockaddr_in *target)
 	}
      
 	debug1("connected to %s\n", inet_ntoa(target->sin_addr));
-
-	/* thanks to Anders Vannman for the fix to make proper syslogging
-	   happen here...  */
-
 	if (dosyslog) {
-		char tmp1[20], tmp2[20];
-		strcpy(tmp1, inet_ntoa(client.sin_addr));
-		strcpy(tmp2, inet_ntoa(target->sin_addr));
+		char tmp1[20] = "", tmp2[20] = "";
+
+		inet_ntop(AF_INET, &client.sin_addr, tmp1, sizeof(tmp1));
+		inet_ntop(AF_INET, &target->sin_addr, tmp2, sizeof(tmp2));
 	  
 		syslog(LOG_NOTICE, "connecting %s/%d to %s/%d",
 		       tmp1, ntohs(client.sin_port),
