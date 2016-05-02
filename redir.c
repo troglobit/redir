@@ -452,8 +452,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	struct sockaddr_in newsession;
 	struct sockaddr_in sockname;
 
-	if (ftpsrv == 0)
-	{
+	if (ftpsrv == 0) {
 		/* is this a port commando ? */
 		if (strncmp(buf, "PORT", 4)) {
 			redir_write(send, buf, (*bytes), REDIR_OUT);
@@ -581,13 +580,11 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 	FD_ZERO(&iofds);
 	FD_SET(insock, &iofds);
 	FD_SET(outsock, &iofds);
-
     
-	if (insock > outsock) {
+	if (insock > outsock)
 		max_fd = insock;
-	} else {
+	else
 		max_fd = outsock;
-	}
 
 	debug1("Entering copyloop() - timeout is %d\n", timeout_secs);
 	while (1) {
@@ -669,17 +666,17 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 	debug1("copyloop - connect time: %8d seconds\n", end_time - start_time);
 	debug1("copyloop - transfer in:  %8ld bytes\n", bytes_in);
 	debug1("copyloop - transfer out: %8ld bytes\n", bytes_out);
-	if (dosyslog) {
-		syslog(LOG_NOTICE, "disconnect %d secs, %ld in %ld out",
-		       (end_time - start_time), bytes_in, bytes_out);
-	}
+	if (dosyslog)
+		syslog(LOG_NOTICE, "disconnect %d secs, %ld in %ld out", (end_time - start_time), bytes_in, bytes_out);
+
 	free(buf);
 }
 
 void doproxyconnect(int socket)
 {
-	char buf[128];
 	int x;
+	char buf[128];
+
 	/* write CONNECT string to proxy */
 	sprintf((char *) &buf, "CONNECT %s HTTP/1.0\n\n", connect_str);
 	x = write(socket, (char *) &buf, strlen(buf));
@@ -687,6 +684,7 @@ void doproxyconnect(int socket)
 		perror("doproxyconnect: failed");
 		exit(1);
 	}
+
 	/* now read result */
 	x = read(socket, (char *) &buf, sizeof(buf));
 	if (x < 1) {
@@ -701,10 +699,8 @@ void doproxyconnect(int socket)
 /* lwait for a connection and move into copyloop...  again,
    ftp redir will call this, so we don't dupilcate it. */
 
-void
-do_accept(int servsock, struct sockaddr_in *target)
+void do_accept(int servsock, struct sockaddr_in *target)
 {
-
 	int clisock, status;
 	int targetsock;
 	struct sockaddr_in client;
@@ -714,7 +710,6 @@ do_accept(int servsock, struct sockaddr_in *target)
 	debug("top of accept loop\n");
 	clisock = accept(servsock, (struct sockaddr *)&client, &clientlen);
 	if (clisock < 0) {
-
 		accept_errno = errno;
 		perror("server: accept");
 
@@ -756,8 +751,10 @@ do_accept(int servsock, struct sockaddr_in *target)
      			syslog(LOG_ERR, "(server) fork failed: %s", strerror(errno));
 
      		_exit(1);
+
      	case 0:  /* Child */
      		break;
+
      	default: /* Parent */
      		/* Wait for child (who has forked off grandchild) */
      		(void) wait(&status);
@@ -778,8 +775,10 @@ do_accept(int servsock, struct sockaddr_in *target)
      			syslog(LOG_ERR, "(child) fork failed: %s", strerror(errno));
 
      		_exit(1);
+
      	case 0:  /* Child */
      		break;
+
      	default: /* Parent */
      		_exit(0);
 	}
@@ -880,7 +879,6 @@ do_accept(int servsock, struct sockaddr_in *target)
  */
 int bindsock(char *addr, int port, int fail) 
 {
-
 	int ret, sd;
 	struct sockaddr_in server;
      
@@ -1044,7 +1042,6 @@ int main(int argc, char *argv[])
 		debug1("IP address for target is %s\n", ip_to_target);
 	}
            
-
 	if (inetd) {
 		int targetsock;
 		struct sockaddr_in client;
@@ -1093,8 +1090,7 @@ int main(int argc, char *argv[])
 			debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
 		}
 
-		if (connect(targetsock, (struct sockaddr *) &target, 
-			    sizeof(target)) < 0) {
+		if (connect(targetsock, (struct sockaddr *) &target, sizeof(target)) < 0) {
 			perror("target: connect");
 
 			if (dosyslog)
