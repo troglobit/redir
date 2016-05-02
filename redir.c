@@ -488,15 +488,13 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 
 	/* we need to listen on a port for the incoming connection.
 	   we will use the port 0, so let the system pick one. */
-
 	localsock = bindsock(inet_ntoa(sockname.sin_addr), 0, 1);
-
 	
 	/* get the real info */
 	if (getsockname(localsock, (struct sockaddr *)&sockname, &socksize) < 0) {
 		perror("getsockname");
 		if (dosyslog)
-			syslog(LOG_ERR, "getsockname failed: %s",strerror(errno));
+			syslog(LOG_ERR, "getsockname failed: %s", strerror(errno));
 		exit(1);
 	}
 
@@ -546,23 +544,22 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	   the server must send a success, if starting here with the copyloop
 	   the success command never arrive the client.*/
 	
-	switch(fork())
-	{
+	switch (fork()) {
      	case -1: /* Error */
-     		syslog(LOG_ERR, "Couldn't fork: %s",strerror(errno));
-     		_exit(1);
-     	case 0:  /* Child */
-	{
+		syslog(LOG_ERR, "Couldn't fork: %s", strerror(errno));
+		_exit(1);
+
+	case 0:  /* Child */
 		/* turn off ftp checking while the data connection is active */
 		ftp = 0;
 		do_accept(localsock, &newsession);
 		close(localsock);
      		_exit(0);
-	}
+
      	default: /* Parent */
-     	{ close(localsock); }
+		close(localsock);
+		break;
 	}
-	return;
 }
 #endif
 
@@ -595,7 +592,7 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 	}
 
 	debug1("Entering copyloop() - timeout is %d\n", timeout_secs);
-	while(1) {
+	while (1) {
 		(void) memcpy(&c_iofds, &iofds, sizeof(iofds));
 
 		/* Set up timeout, Linux returns seconds left in this structure
@@ -715,7 +712,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 		perror("server: accept");
 
 		if (dosyslog)
-			syslog(LOG_ERR, "accept failed: %s",strerror(errno));
+			syslog(LOG_ERR, "accept failed: %s", strerror(errno));
 
 		/* determine if this error is fatal */
 		switch(accept_errno) {
@@ -749,7 +746,7 @@ do_accept(int servsock, struct sockaddr_in *target)
      		perror("(server) fork");
 
      		if (dosyslog)
-     			syslog(LOG_ERR, "(server) fork failed: %s",strerror(errno));
+     			syslog(LOG_ERR, "(server) fork failed: %s", strerror(errno));
 
      		_exit(1);
      	case 0:  /* Child */
@@ -776,7 +773,7 @@ do_accept(int servsock, struct sockaddr_in *target)
      		perror("(child) fork");
 
      		if (dosyslog)
-     			syslog(LOG_ERR, "(child) fork failed: %s",strerror(errno));
+     			syslog(LOG_ERR, "(child) fork failed: %s", strerror(errno));
 
      		_exit(1);
      	case 0:  /* Child */
@@ -807,7 +804,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 		perror("target: socket");
 	  
 		if (dosyslog)
-			syslog(LOG_ERR, "socket failed: %s",strerror(errno));
+			syslog(LOG_ERR, "socket failed: %s", strerror(errno));
 		
 		_exit(1);
 	}
@@ -831,7 +828,7 @@ do_accept(int servsock, struct sockaddr_in *target)
    only be different if the input value is 0 (let the system pick a 
    port) */
 			if (dosyslog)
-				syslog(LOG_ERR, "bind failed: %s",strerror(errno));
+				syslog(LOG_ERR, "bind failed: %s", strerror(errno));
 
 			_exit(1);
 		}
@@ -843,7 +840,7 @@ do_accept(int servsock, struct sockaddr_in *target)
 		perror("target: connect");
 
 		if (dosyslog)
-			syslog(LOG_ERR, "bind failed: %s",strerror(errno));
+			syslog(LOG_ERR, "bind failed: %s", strerror(errno));
 
 		_exit(1);
 	}
@@ -1082,7 +1079,7 @@ int main(int argc, char *argv[])
 			perror("target: socket");
 
 			if (dosyslog)
-				syslog(LOG_ERR, "targetsock failed: %s",strerror(errno));
+				syslog(LOG_ERR, "targetsock failed: %s", strerror(errno));
 
 			exit(1);
 		}
@@ -1100,7 +1097,7 @@ int main(int argc, char *argv[])
 				perror("bind_addr: cannot bind to forcerd outgoing addr");
 				 
 				if (dosyslog)
-					syslog(LOG_ERR, "bind failed: %s",strerror(errno));
+					syslog(LOG_ERR, "bind failed: %s", strerror(errno));
 				 
 				return 1;
 			}
@@ -1112,7 +1109,7 @@ int main(int argc, char *argv[])
 			perror("target: connect");
 
 			if (dosyslog)
-				syslog(LOG_ERR, "connect failed: %s",strerror(errno));
+				syslog(LOG_ERR, "connect failed: %s", strerror(errno));
 
 			return 1;
 		}
@@ -1126,12 +1123,12 @@ int main(int argc, char *argv[])
 		/* Just start copying - one side of the loop is stdin - 0 */
 		copyloop(0, targetsock, timeout);
 	} else {
-		int servsock;
+		int sd;
 	
 		if (local_addr)
-			servsock = bindsock(local_addr, local_port, 0);
+			sd = bindsock(local_addr, local_port, 0);
 		else
-			servsock = bindsock(NULL, local_port, 0);
+			sd = bindsock(NULL, local_port, 0);
 
 		/*
 		 * Accept connections.  When we accept one, ns
@@ -1139,7 +1136,7 @@ int main(int argc, char *argv[])
 		 * contain the address of the client.
 		 */
 		while (1) 
-			do_accept(servsock, &target);
+			do_accept(sd, &target);
 	}
 
 	/* this should really never be reached */
