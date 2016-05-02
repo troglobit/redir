@@ -489,6 +489,10 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	/* we need to listen on a port for the incoming connection.
 	   we will use the port 0, so let the system pick one. */
 	localsock = bindsock(inet_ntoa(sockname.sin_addr), 0, 1);
+	if (localsock == -1) {
+		fprintf(stderr, "ftp: unable to bind new listening address\n");
+		exit(1);
+	}
 	
 	/* get the real info */
 	if (getsockname(localsock, (struct sockaddr *)&sockname, &socksize) < 0) {
@@ -499,15 +503,9 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	}
 
 	lport = ntohs(sockname.sin_port);
+	lporthi = (lport >> 8 ) & 0xff;
+	lportlo = lport & 0xff;
 
-	lporthi=(lport >> 8 ) & 0xff;
-	lportlo=lport & 0xff;
-
-	/* check to see if we bound */
-	if (localsock == -1) {
-		fprintf(stderr, "ftp: unable to bind new listening address\n");
-		exit(1);
-	}
 	if (ftpsrv == 0) {
 		/* send the new port and ipaddress to the server */
 		(*bytes) = sprintf(buf, "PORT %d,%d,%d,%d,%d,%d\n",
