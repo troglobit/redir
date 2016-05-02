@@ -626,12 +626,17 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 			bytes_out += bytes;
 		}
 		if (FD_ISSET(outsock, &c_iofds)) {
-			if ((bytes = read(outsock, buf, bufsize)) <= 0)
+			bytes = read(outsock, buf, bufsize);
+			if (bytes <= 0)
 				break;
-			/* if we're correcting for PASV on ftp redirections, then
-			   fix buf and bytes to have the new address, among other
-			   things */
+
+			/* Make sure to terminate buffer before passing it to ftp_clean() */
+			buf[bytes] = 0;
+
 #ifndef NO_FTP
+			/* if we're correcting for PASV on ftp redirections, then
+			 * fix buf and bytes to have the new address, among other
+			 * things */
 			if (ftp & FTP_PASV)
 				ftp_clean(insock, buf, &bytes,1);
 			else 
@@ -664,7 +669,6 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 		       (end_time - start_time), bytes_in, bytes_out);
 	}
 	free(buf);
-	return;
 }
 
 void doproxyconnect(int socket)
