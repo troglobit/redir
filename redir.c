@@ -611,8 +611,13 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 		}
 
 		if (FD_ISSET(insock, &c_iofds)) {
-			if ((bytes = read(insock, buf, bufsize)) <= 0)
+			bytes = read(insock, buf, bufsize);
+			if (bytes <= 0)
 				break;
+
+			/* Make sure to terminate buffer before passing it to ftp_clean() */
+			buf[bytes] = 0;
+
 #ifndef NO_FTP
 			if (ftp & FTP_PORT)
 				/* if we're correcting FTP, lookup for a PORT commando
