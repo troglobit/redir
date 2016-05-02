@@ -142,7 +142,7 @@ int bindsock(char *addr, int port, int fail);
 /* Used in this program to write something in a socket, it has the same
    parameters and return value as "write", but with the flag "in": true if
    it's the "in" socket and false if it's the "out" socket */
-static inline ssize_t redir_write (int fd, const void *buf, size_t size, int in)
+static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 {
 	ssize_t result;
 	int wait;
@@ -157,10 +157,10 @@ static inline ssize_t redir_write (int fd, const void *buf, size_t size, int in)
 
 		rand_time = rand() % (random_wait * 2);
 		debug1("random wait: %u\n", rand_time);
-		waitbw.tv_sec=rand_time/1000;
-		waitbw.tv_usec=rand_time%1000;
+		waitbw.tv_sec  = rand_time / 1000;
+		waitbw.tv_usec = rand_time % 1000;
 
-		select (1, &empty, NULL, NULL, &waitbw);
+		select(1, &empty, NULL, NULL, &waitbw);
 	}
 
 	result = write(fd, buf, size);
@@ -861,10 +861,9 @@ do_accept(int servsock, struct sockaddr_in *target)
 		doproxyconnect(targetsock);
 
 #ifndef NO_SHAPER
-        /* initialise random number if necessary */
-        if ( random_wait > 0 ) {
-          srand(getpid());
-        }
+	/* initialise random number if necessary */
+	if (random_wait > 0)
+		srand(getpid());
 #endif
 
 	copyloop(clisock, targetsock, timeout);
