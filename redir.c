@@ -417,7 +417,7 @@ static void parse_args(int argc, char *argv[])
 	}
 #endif	      
     
-	openlog(ident, LOG_PID, LOG_DAEMON);
+	openlog(ident, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 }
 
 #ifndef NO_FTP
