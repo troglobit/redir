@@ -588,8 +588,7 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 
 
 		if (select(max_fd + 1, &c_iofds, NULL, NULL, (timeout_secs ? &timeout : NULL)) <= 0) {
-			if (dosyslog)
-				syslog(LOG_NOTICE, "Connection timeout: %d sec", timeout_secs);
+			syslog(LOG_NOTICE, "Connection timeout: %d sec", timeout_secs);
 			break;
 		}
 
@@ -652,8 +651,7 @@ no_mem:
 	debug("copyloop - connect time: %8d seconds", end_time - start_time);
 	debug("copyloop - transfer in:  %8ld bytes", bytes_in);
 	debug("copyloop - transfer out: %8ld bytes", bytes_out);
-	if (dosyslog)
-		syslog(LOG_NOTICE, "Disconnect %d secs, %ld in %ld out", (end_time - start_time), bytes_in, bytes_out);
+	syslog(LOG_NOTICE, "Disconnect %d secs, %ld in %ld out", (end_time - start_time), bytes_in, bytes_out);
 }
 
 void doproxyconnect(int socket)
@@ -688,28 +686,21 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 	int targetsock;
 	struct sockaddr_in client, addr_out;
 	socklen_t clientlen = sizeof(client);
-	int accept_errno;
      
 	debug("top of accept loop");
 	clisock = accept(servsock, (struct sockaddr *)&client, &clientlen);
 	if (clisock < 0) {
-		accept_errno = errno;
-		if (dosyslog)
-			syslog(LOG_ERR, "Failed calling accept(): %s", strerror(errno));
+		syslog(LOG_ERR, "Failed calling accept(): %s", strerror(errno));
 
-		/* determine if this error is fatal */
-		switch(accept_errno) {
-			/* non-fatal errors */
+		switch(errno) {
 		case EHOSTUNREACH:
 		case ECONNRESET:
 		case ETIMEDOUT:
-			return;
+			return;  /* non-fatal errors */
 
-			/* all other errors assumed fatal */
 		default:
-			exit(1);
+			exit(1); /* all other errors assumed fatal */
 		}
-
 	}
      
 	debug("peer IP is %s", inet_ntoa(client.sin_addr));
@@ -725,9 +716,7 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 	 */
 	switch (fork()) {
      	case -1: /* Error */
-     		if (dosyslog)
-     			syslog(LOG_ERR, "Server failed fork(): %s", strerror(errno));
-
+		syslog(LOG_ERR, "Server failed fork(): %s", strerror(errno));
      		_exit(1);
 
      	case 0:  /* Child */
@@ -746,9 +735,7 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 	  
 	switch (fork()) {
      	case -1: /* Error */
-     		if (dosyslog)
-     			syslog(LOG_ERR, "Failed duoble fork(): %s", strerror(errno));
-
+		syslog(LOG_ERR, "Failed duoble fork(): %s", strerror(errno));
      		_exit(1);
 
      	case 0:  /* Child */
@@ -771,14 +758,11 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 		_exit(0);
 	}
 
-	if (dosyslog)
-		syslog(LOG_INFO, "Connection from %s", eval_client(&request));
+	syslog(LOG_INFO, "Connection from %s", eval_client(&request));
 #endif /* USE_TCP_WRAPPERS */
 
 	if ((targetsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		if (dosyslog)
-			syslog(LOG_ERR, "Failed creating target socket: %s", strerror(errno));
-		
+		syslog(LOG_ERR, "Failed creating target socket: %s", strerror(errno));
 		_exit(1);
 	}
 
@@ -813,29 +797,25 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 			/* the port parameter fetch the really port we are listening,
 			 * it should only be different if the input value is 0 (let
 			 * the system pick a port) */
-			if (dosyslog)
-				syslog(LOG_ERR, "Failed binding target socket: %s", strerror(errno));
-
+			syslog(LOG_ERR, "Failed binding target socket: %s", strerror(errno));
 			_exit(1);
 		}
 		debug("outgoing IP is %s", inet_ntoa(addr_out.sin_addr));
 	}
 
 	if (connect(targetsock, (struct sockaddr *)target, sizeof(struct sockaddr_in)) < 0) {
-		if (dosyslog)
-			syslog(LOG_ERR, "Failed connecting to target %s: %s", inet_ntoa(addr_out.sin_addr), strerror(errno));
-
+		syslog(LOG_ERR, "Failed connecting to target %s: %s", inet_ntoa(addr_out.sin_addr), strerror(errno));
 		_exit(1);
 	}
      
 	debug("connected to %s", inet_ntoa(target->sin_addr));
-	if (dosyslog) {
+	if (dosyslog) {	/* XXX: Check loglevel >= LOG_INFO in the future */
 		char tmp1[20] = "", tmp2[20] = "";
 
 		inet_ntop(AF_INET, &client.sin_addr, tmp1, sizeof(tmp1));
 		inet_ntop(AF_INET, &target->sin_addr, tmp2, sizeof(tmp2));
 	  
-		syslog(LOG_NOTICE, "Connecting %s:%d to %s:%d",
+		syslog(LOG_INFO, "Connecting %s:%d to %s:%d",
 		       tmp1, ntohs(client.sin_port),
 		       tmp2, ntohs(target->sin_port));
 	}
@@ -879,9 +859,7 @@ static int bindsock(char *addr, int port, int fail)
 		if (fail)
 			return -1;
 
-		if (dosyslog)
-			syslog(LOG_ERR, "Failed creating server socket: %s", strerror(errno));
-
+		syslog(LOG_ERR, "Failed creating server socket: %s", strerror(errno));
 		exit(1);
 	}
 
@@ -909,8 +887,7 @@ static int bindsock(char *addr, int port, int fail)
 			return -1;
 		}
 
-		if (dosyslog)
-			syslog(LOG_ERR, "Failed setting socket option SO_REUSEADDR: %s", strerror(errno));
+		syslog(LOG_ERR, "Failed setting socket option SO_REUSEADDR: %s", strerror(errno));
 		exit(1);
 	}
 
@@ -921,8 +898,7 @@ static int bindsock(char *addr, int port, int fail)
 			return -1;
 		}
 
-		if (dosyslog)
-			syslog(LOG_ERR, "Failed setting socket option SO_LINGER: %s", strerror(errno));
+		syslog(LOG_ERR, "Failed setting socket option SO_LINGER: %s", strerror(errno));
 		exit(1);
 	}
      
@@ -935,8 +911,7 @@ static int bindsock(char *addr, int port, int fail)
 			return -1;
 		}
 
-		if (dosyslog)
-			syslog(LOG_ERR, "Failed binding server socket: %s", strerror(errno));
+		syslog(LOG_ERR, "Failed binding server socket: %s", strerror(errno));
 		exit(1);
 	}
      
@@ -949,9 +924,7 @@ static int bindsock(char *addr, int port, int fail)
 			return -1;
 		}
 
-		if (dosyslog)
-			syslog(LOG_ERR, "Failed calling listen() on server socket: %s", strerror(errno));
-
+		syslog(LOG_ERR, "Failed calling listen() on server socket: %s", strerror(errno));
 		exit(1);
 	}
      
@@ -1006,9 +979,7 @@ int main(int argc, char *argv[])
 
 		targetsock = socket(AF_INET, SOCK_STREAM, 0);
 		if (targetsock < 0) {
-			if (dosyslog)
-				syslog(LOG_ERR, "Failed creating target socket: %s", strerror(errno));
-
+			syslog(LOG_ERR, "Failed creating target socket: %s", strerror(errno));
 			exit(1);
 		}
 
@@ -1037,26 +1008,19 @@ int main(int argc, char *argv[])
 			/* this only makes sense if an outgoing IP addr has been forced;
 			 * at this point, we have a valid targetsock to bind() to.. */
 			if (bind(targetsock, (struct sockaddr *)&addr_out, sizeof(addr_out)) < 0) {
-				if (dosyslog)
-					syslog(LOG_ERR, "Failed binding to outbound address: %s", strerror(errno));
-				 
+				syslog(LOG_ERR, "Failed binding to outbound address: %s", strerror(errno));
 				return 1;
 			}
 			debug("outgoing IP is %s", inet_ntoa(addr_out.sin_addr));
 		}
 
 		if (connect(targetsock, (struct sockaddr *)&target, sizeof(target)) < 0) {
-			if (dosyslog)
-				syslog(LOG_ERR, "Failed connecting to target %s: %s", target_ip, strerror(errno));
-
+			syslog(LOG_ERR, "Failed connecting to target %s: %s", target_ip, strerror(errno));
 			return 1;
 		}
 
-		if (dosyslog) {
-			syslog(LOG_NOTICE, "connecting %s:%d to %s:%d",
-			       inet_ntoa(client.sin_addr), ntohs(client.sin_port),
-			       target_ip, ntohs(target.sin_port));
-		}
+		syslog(LOG_INFO, "Connecting %s:%d to %s:%d", inet_ntoa(client.sin_addr), ntohs(client.sin_port),
+		       target_ip, ntohs(target.sin_port));
 
 		/* Just start copying - one side of the loop is stdin - 0 */
 		copyloop(0, targetsock, timeout);
