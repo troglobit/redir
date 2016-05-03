@@ -440,7 +440,6 @@ static void parse_args(int argc, char *argv[],
    
 void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 {
-
 	char *port_start;
 	int rporthi, lporthi;
 	int lportlo, rportlo;
@@ -571,10 +570,10 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 	unsigned long bytes_in = 0;
 	unsigned long bytes_out = 0;
 	unsigned int start_time, end_time;
-	char* buf = malloc(bufsize);
+	char *buf;
 
 	/* Record start time */
-	start_time = (unsigned int) time(NULL);
+	start_time = (unsigned int)time(NULL);
 
 	/* file descriptor bits */
 	FD_ZERO(&iofds);
@@ -586,6 +585,12 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 	else
 		max_fd = outsock;
 
+	buf = malloc(bufsize);
+	if (!buf) {
+		syslog(LOG_ERR, "Failed allocating session buffer: %s", strerror(errno));
+		goto no_mem;
+	}
+
 	debug1("Entering copyloop() - timeout is %d\n", timeout_secs);
 	while (1) {
 		(void) memcpy(&c_iofds, &iofds, sizeof(iofds));
@@ -596,15 +601,10 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 		timeout.tv_usec = 0;
 
 
-		if (select(max_fd + 1,
-			   &c_iofds,
-			   (fd_set *)0,
-			   (fd_set *)0,
-			   (timeout_secs ? &timeout : NULL)) <= 0) {
-		  if (dosyslog) {
-		    syslog(LOG_NOTICE,"connection timeout: %d sec",timeout_secs);
-		  }
-		  break;
+		if (select(max_fd + 1, &c_iofds, NULL, NULL, (timeout_secs ? &timeout : NULL)) <= 0) {
+			if (dosyslog)
+				syslog(LOG_NOTICE,"connection timeout: %d sec",timeout_secs);
+			break;
 		}
 
 		if (FD_ISSET(insock, &c_iofds)) {
@@ -649,14 +649,14 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 		}
 	}
 	debug("Leaving main copyloop\n");
-
+	free(buf);
+no_mem:
 /*
   setsockopt(insock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
   setsockopt(insock, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(SO_LINGER)); 
   setsockopt(outsock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
   setsockopt(outsock, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(SO_LINGER)); 
 */
-
 	shutdown(insock,0);
 	shutdown(outsock,0);
 	close(insock);
@@ -668,8 +668,6 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 	debug1("copyloop - transfer out: %8ld bytes\n", bytes_out);
 	if (dosyslog)
 		syslog(LOG_NOTICE, "disconnect %d secs, %ld in %ld out", (end_time - start_time), bytes_in, bytes_out);
-
-	free(buf);
 }
 
 void doproxyconnect(int socket)
