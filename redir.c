@@ -84,8 +84,7 @@
 #include <tcpd.h>
 #endif
 
-#define debug(x)	if (dodebug) fprintf(stderr, x)
-#define debug1(x,y)	if (dodebug) fprintf(stderr, x, y)
+#define debug(fmt, args...)	if (dodebug) syslog(LOG_DEBUG, fmt, ##args)
 
 int inetd = 0;
 int background = 1;
@@ -156,7 +155,7 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 		FD_ZERO(&empty);
 
 		rand_time = rand() % (random_wait * 2);
-		debug1("random wait: %u\n", rand_time);
+		debug("random wait: %u", rand_time);
 		waitbw.tv_sec  = rand_time / 1000;
 		waitbw.tv_usec = rand_time % 1000;
 
@@ -174,7 +173,7 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 
 		/* wait to be sure tu be below the allowed bandwidth */
 		bits = size * 8;
-		debug1("bandwidth wait: %lu\n", 1000 * bits / max_bandwidth);
+		debug("bandwidth wait: %lu", 1000 * bits / max_bandwidth);
 		waitbw.tv_sec  = bits/max_bandwidth;
 		waitbw.tv_usec = (1000 * (bits % max_bandwidth)) / max_bandwidth;
 
@@ -513,10 +512,10 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	newsession.sin_addr.s_addr = remip[0] | (remip[1] << 8)
 		| (remip[2] << 16) | (remip[3] << 24);
 
-	debug1("ftpdata server ip: %s\n", inet_ntoa(newsession.sin_addr));
-	debug1("ftpdata server port: %d\n", rport);
-	debug1("listening for ftpdata on port %d\n", lport);
-	debug1("listening for ftpdata on addr %s\n", inet_ntoa(sockname.sin_addr));
+	debug("ftpdata server ip: %s", inet_ntoa(newsession.sin_addr));
+	debug("ftpdata server port: %d", rport);
+	debug("listening for ftpdata on port %d", lport);
+	debug("listening for ftpdata on addr %s", inet_ntoa(sockname.sin_addr));
 
 
 	/* now that we're bound and listening, we can safely send the new
@@ -580,7 +579,7 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 		goto no_mem;
 	}
 
-	debug1("Entering copyloop() - timeout is %d\n", timeout_secs);
+	debug("Entering copyloop() - timeout is %d", timeout_secs);
 	while (1) {
 		(void) memcpy(&c_iofds, &iofds, sizeof(iofds));
 
@@ -637,7 +636,7 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 			bytes_in += bytes;
 		}
 	}
-	debug("Leaving main copyloop\n");
+	debug("Leaving main copyloop");
 	free(buf);
 no_mem:
 /*
@@ -650,11 +649,11 @@ no_mem:
 	shutdown(outsock,0);
 	close(insock);
 	close(outsock);
-	debug("copyloop - sockets shutdown and closed\n");
+	debug("copyloop - sockets shutdown and closed");
 	end_time = (unsigned int) time(NULL);
-	debug1("copyloop - connect time: %8d seconds\n", end_time - start_time);
-	debug1("copyloop - transfer in:  %8ld bytes\n", bytes_in);
-	debug1("copyloop - transfer out: %8ld bytes\n", bytes_out);
+	debug("copyloop - connect time: %8d seconds", end_time - start_time);
+	debug("copyloop - transfer in:  %8ld bytes", bytes_in);
+	debug("copyloop - transfer out: %8ld bytes", bytes_out);
 	if (dosyslog)
 		syslog(LOG_NOTICE, "disconnect %d secs, %ld in %ld out", (end_time - start_time), bytes_in, bytes_out);
 }
@@ -693,7 +692,7 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 	socklen_t clientlen = sizeof(client);
 	int accept_errno;
      
-	debug("top of accept loop\n");
+	debug("top of accept loop");
 	clisock = accept(servsock, (struct sockaddr *)&client, &clientlen);
 	if (clisock < 0) {
 		accept_errno = errno;
@@ -717,8 +716,8 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 
 	}
      
-	debug1("peer IP is %s\n", inet_ntoa(client.sin_addr));
-	debug1("peer socket is %d\n", ntohs(client.sin_port));
+	debug("peer IP is %s", inet_ntoa(client.sin_addr));
+	debug("peer socket is %d", ntohs(client.sin_port));
 
 	/*
 	 * Double fork here so we don't have to wait later
@@ -813,7 +812,7 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 		}
 		memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
 
-		debug1("IP address for target is %s\n", inet_ntoa(addr_out.sin_addr));
+		debug("IP address for target is %s", inet_ntoa(addr_out.sin_addr));
 	}
 
 	if (bind_addr || transproxy) {
@@ -833,7 +832,7 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 
 			_exit(1);
 		}
-		debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
+		debug("outgoing IP is %s", inet_ntoa(addr_out.sin_addr));
 	}
 
 	if (connect(targetsock, (struct sockaddr *)target, sizeof(struct sockaddr_in)) < 0) {
@@ -845,7 +844,7 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 		_exit(1);
 	}
      
-	debug1("connected to %s\n", inet_ntoa(target->sin_addr));
+	debug("connected to %s", inet_ntoa(target->sin_addr));
 	if (dosyslog) {
 		char tmp1[20] = "", tmp2[20] = "";
 
@@ -909,14 +908,14 @@ static int bindsock(char *addr, int port, int fail)
 	if (addr != NULL) {
 		struct hostent *hp;
 	  
-		debug1("listening on %s\n", addr);
+		debug("listening on %s", addr);
 		if ((hp = gethostbyname(addr)) == NULL) {
 			fprintf(stderr, "%s: cannot resolve hostname.\n", addr);
 			exit(1);
 		}
 		memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
 	} else {
-		debug("local IP is default\n");
+		debug("local IP is default");
 		server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 	}
      
@@ -1001,8 +1000,8 @@ int main(int argc, char *argv[])
 #endif /* USE_TCP_WRAPPERS */
 
 		if (!getpeername(0, (struct sockaddr *) &client, &client_size)) {
-			debug1("peer IP is %s\n", inet_ntoa(client.sin_addr));
-			debug1("peer socket is %d\n", ntohs(client.sin_port));
+			debug("peer IP is %s", inet_ntoa(client.sin_addr));
+			debug("peer socket is %d", ntohs(client.sin_port));
 		}
 
 		memset(&target, 0, sizeof(target));
@@ -1011,20 +1010,20 @@ int main(int argc, char *argv[])
 		if (target_addr != NULL) {
 			struct hostent *hp;
 
-			debug1("target is %s\n", target_addr);
+			debug("target is %s", target_addr);
 			if ((hp = gethostbyname(target_addr)) == NULL) {
 				fprintf(stderr, "%s: host unknown.\n", target_addr);
 				exit(1);
 			}
 			memcpy(&target.sin_addr, hp->h_addr, hp->h_length);
 		} else {
-			debug("target is default\n");
+			debug("target is default");
 			target.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 		}
 
 		target_ip = strdup(inet_ntoa(target.sin_addr));
-		debug1("target IP address is %s\n", target_ip);
-		debug1("target port is %d\n", target_port);
+		debug("target IP address is %s", target_ip);
+		debug("target port is %d", target_port);
 
 		targetsock = socket(AF_INET, SOCK_STREAM, 0);
 		if (targetsock < 0) {
@@ -1054,7 +1053,7 @@ int main(int argc, char *argv[])
 			}
 			memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
 
-			debug1("IP address for target is %s\n", inet_ntoa(addr_out.sin_addr));
+			debug("IP address for target is %s", inet_ntoa(addr_out.sin_addr));
 		}
 
 		if (bind_addr || transproxy) {
@@ -1068,7 +1067,7 @@ int main(int argc, char *argv[])
 				 
 				return 1;
 			}
-			debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
+			debug("outgoing IP is %s", inet_ntoa(addr_out.sin_addr));
 		}
 
 		if (connect(targetsock, (struct sockaddr *)&target, sizeof(target)) < 0) {
@@ -1118,20 +1117,20 @@ int main(int argc, char *argv[])
 			if (target_addr != NULL) {
 				struct hostent *hp;
 
-				debug1("target is %s\n", target_addr);
+				debug("target is %s", target_addr);
 				if ((hp = gethostbyname(target_addr)) == NULL) {
 					fprintf(stderr, "%s: host unknown.\n", target_addr);
 					exit(1);
 				}
 				memcpy(&target.sin_addr, hp->h_addr, hp->h_length);
 			} else {
-				debug("target is default\n");
+				debug("target is default");
 				target.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 			}
 
 			target_ip = strdup(inet_ntoa(target.sin_addr));
-			debug1("target IP address is %s\n", target_ip);
-			debug1("target port is %d\n", target_port);
+			debug("target IP address is %s", target_ip);
+			debug("target port is %d", target_port);
 
 			do_accept(sd, &target);
 		}
