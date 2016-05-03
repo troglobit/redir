@@ -205,7 +205,7 @@ static int usage(int code)
 		"  -d,--debug              Enable debugging info\n"
 		"  -t,--timeout=SEC        Set timeout to SEC seconds\n"
 		"  -s,--syslog             Log messages to syslog\n"
-		"  -n,--name=STR           Tag syslog messages with STR\n"
+		"  -I,--ident=NAME         Identity, tag syslog messages with NAME\n"
 		"  -x,--connect=STR        CONNECT string passed to proxy server\n"
 #ifdef USE_TCP_WRAPPERS
 		"                          Also used as service name for TCP wrappers\n"
@@ -263,9 +263,9 @@ static void parse_args(int argc, char *argv[],
 		{"debug",         no_argument,       0, 'd'},
 		{"timeout",       required_argument, 0, 't'},
 		{"inetd",         no_argument,       0, 'i'},
-		{"ident",         required_argument, 0, 'n'},
+		{"ident",         required_argument, 0, 'I'},
+		{"name",          required_argument, 0, 'I'},
 		{"syslog",        no_argument,       0, 's'},
-		{"name",          required_argument, 0, 'n'},
 		{"connect",       required_argument, 0, 'x'},
 #ifndef NO_FTP
 		{"ftp",           required_argument, 0, 'f'},
@@ -299,7 +299,7 @@ static void parse_args(int argc, char *argv[],
 	*target_port = 0;
 	*local_port = 0;
 
-	while ((opt = getopt_long(argc, argv, "dhisfpn:t:b:a:l:r:c:x:z:m:w:o:v",
+	while ((opt = getopt_long(argc, argv, "dhisfpI:t:b:a:l:r:c:x:z:m:w:o:v",
 				  long_options, &option_index)) != -1) {
 		switch (opt) {
 		case 'x':
@@ -340,7 +340,7 @@ static void parse_args(int argc, char *argv[],
 			(*inetd)++;
 			break;
 
-		case 'n':
+		case 'I':
 			/* This is the ident which is added to syslog messages */
 			ident = optarg;
 			break;

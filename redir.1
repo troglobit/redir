@@ -12,7 +12,7 @@
 .Op Fl -cport=PORT
 .Op Fl -debug
 .Op Fl -syslog
-.Op Fl -name=STR
+.Op Fl -ident=NAME
 .Op Fl -timeout=SEC
 .Op Fl -bind=IP
 .Op Fl -ftp=TYPE
@@ -29,7 +29,7 @@
 .Op Fl -cport=PORT
 .Op Fl -debug
 .Op Fl -syslog
-.Op Fl -name=STR
+.Op Fl -ident=NAME
 .Op Fl -timeout=SEC
 .Op Fl -ftp=TYPE
 .Op Fl -transproxy
@@ -63,9 +63,9 @@ Run as a process started from
 with the connection passed as stdin and stdout on startup.
 .It Fl d, Fl -debug
 Write debug output to stderr or syslog.
-.It Fl n, Fl -name=STR
-Specify program name to be used for TCP wrapper checks and syslog
-logging.
+.It Fl I, Fl -ident=STR
+Specify program identity (name) to be used for TCP wrapper checks and
+syslog logging.
 .It Fl t, Fl -timeout=SEC
 Timeout and close the connection after SEC seconds of inactivity.
 .It Fl s, Fl -syslog
