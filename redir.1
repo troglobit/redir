@@ -11,6 +11,7 @@
 .Op Fl -caddr=HOST
 .Op Fl -cport=PORT
 .Op Fl -debug
+.Op Fl -foreground
 .Op Fl -syslog
 .Op Fl -ident=NAME
 .Op Fl -timeout=SEC
@@ -68,6 +69,8 @@ Specify program identity (name) to be used for TCP wrapper checks and
 syslog logging.
 .It Fl t, Fl -timeout=SEC
 Timeout and close the connection after SEC seconds of inactivity.
+.It Fl n, Fl -foreground
+Run in foreground, do not detach from controlling terminal.
 .It Fl s, Fl -syslog
 Log messages to syslog.
 .It Fl b, Fl -bind=IP

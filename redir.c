@@ -88,6 +88,7 @@
 #define debug1(x,y)	if (dodebug) fprintf(stderr, x, y)
 
 int inetd = 0;
+int background = 1;
 int timeout = 0;
 int dodebug = 0;
 int dosyslog = 0;
@@ -203,6 +204,7 @@ static int usage(int code)
 		"  -i,--inetd              Run from inetd\n"
 		"  -d,--debug              Enable debugging info\n"
 		"  -t,--timeout=SEC        Set timeout to SEC seconds\n"
+		"  -n,--foreground         Run in foreground, do not detach from terminal\n"
 		"  -s,--syslog             Log messages to syslog\n"
 		"  -I,--ident=NAME         Identity, tag syslog messages with NAME\n"
 		"  -x,--connect=STR        CONNECT string passed to proxy server\n"
@@ -322,6 +324,10 @@ static void parse_args(int argc, char *argv[])
 		case 'I':
 			/* This is the ident which is added to syslog messages */
 			ident = optarg;
+			break;
+
+		case 'n':
+			background = 0;
 			break;
 
 		case 's':
@@ -1085,6 +1091,14 @@ int main(int argc, char *argv[])
 	} else {
 		int sd;
 	
+		if (background) {
+			syslog(LOG_DEBUG, "Daemonizing ...");
+			if (-1 == daemon(0, 0)) {
+				syslog(LOG_ERR, "Failed daemonizing: %s", strerror(errno));
+				return 1;
+			}
+		}
+
 		if (local_addr)
 			sd = bindsock(local_addr, local_port, 0);
 		else
