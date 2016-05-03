@@ -87,14 +87,17 @@
 #define debug(x)	if (dodebug) fprintf(stderr, x)
 #define debug1(x,y)	if (dodebug) fprintf(stderr, x, y)
 
-/* let's set up some globals... */
+int inetd = 0;
+int timeout = 0;
 int dodebug = 0;
 int dosyslog = 0;
-int reuse_addr = 1; /* allow address reuse */
-struct linger linger_opt = { 0, 0}; /* do not linger */
-char *bind_addr = NULL;
 
-int timeout = 0;
+char *target_ip;
+char *target_addr;
+int   target_port;
+char *local_addr;
+int   local_port;
+char *bind_addr = NULL;
 extern char *__progname;
 
 #ifndef NO_FTP
@@ -105,15 +108,15 @@ int transproxy = 0;
 
 #ifndef NO_SHAPER
 int max_bandwidth = 0;
-int random_wait = 0;
-int wait_in_out=3; /* bit 0: wait for "in", bit 1: wait for "out" */
-int wait_in=1;
-int wait_out=1;
+int random_wait   = 0;
+int wait_in_out   = 3; /* bit 0: wait for "in", bit 1: wait for "out" */
+int wait_in       = 1;
+int wait_out      = 1;
 #endif
 
-unsigned int bufsize=4096;
+unsigned int bufsize = BUFSIZ;
 char *connect_str = NULL;	/* CONNECT string passed to proxy */
-char *ident = NULL;
+char *ident       = NULL;
 
 #ifndef NO_FTP
 /* what ftp to redirect */
@@ -127,11 +130,7 @@ int     allow_severity = LOG_INFO;
 int     deny_severity = LOG_WARNING;
 #endif /* USE_TCP_WRAPPERS */
 
-#ifdef NEED_STRRCHR
-#define strrchr rindex
-#endif /* NEED_STRRCHR */
-
-#define REDIR_IN 1
+#define REDIR_IN  1
 #define REDIR_OUT 0
 
 /* prototype anything needing it */
@@ -230,27 +229,7 @@ static int usage(int code)
 	return code;
 }
 
-static void parse_args(int argc, char *argv[],
-	   char **target_addr,
-	   int   *target_port,
-           char **local_addr,
-	   int   *local_port,
-	   int   *timeout,
-	   int   *dodebug,
-	   int   *inetd,
-	   int   *dosyslog,
-	   char **bind_addr,
-#ifndef NO_FTP
-	   int   *ftp,
-#endif
-	   int   *transproxy,
-#ifndef NO_SHAPER
-           unsigned int *bufsizeout,
-           int *max_bandwidth,
-           int *random_wait,
-           int *wait_in_out,
-#endif
-	   char **connect_str)
+static void parse_args(int argc, char *argv[])
 {
 	static struct option long_options[] = {
 		{"help",          no_argument,       0, 'h'},
@@ -294,19 +273,19 @@ static void parse_args(int argc, char *argv[],
 	char *ftp_type = NULL;
 #endif
  
-	*local_addr = NULL;
-	*target_addr = NULL;
-	*target_port = 0;
-	*local_port = 0;
+	target_addr = NULL;
+	target_port = 0;
+	local_addr  = NULL;
+	local_port  = 0;
 
 	while ((opt = getopt_long(argc, argv, "dhisfpI:t:b:a:l:r:c:x:z:m:w:o:v",
 				  long_options, &option_index)) != -1) {
 		switch (opt) {
 		case 'x':
-			*connect_str = optarg;
+			connect_str = optarg;
 			break;
 		case 'a':
-			*local_addr = optarg;
+			local_addr = optarg;
 			break;
 
 		case 'l':
@@ -318,26 +297,26 @@ static void parse_args(int argc, char *argv[],
 			break;
 
 		case 'c':
-			*target_addr = optarg;
+			target_addr = optarg;
 			break;
 
 		case 'b':
-			*bind_addr = optarg;
+			bind_addr = optarg;
 			break;
 
 		case 'd':
-			(*dodebug)++;
+			dodebug++;
 			break;
 
 		case 'h':
 			exit(usage(0));
 
 		case 't':
-			*timeout = atol(optarg);
+			timeout = atol(optarg);
 			break;
 
 		case 'i':
-			(*inetd)++;
+			inetd++;
 			break;
 
 		case 'I':
@@ -346,7 +325,7 @@ static void parse_args(int argc, char *argv[],
 			break;
 
 		case 's':
-			(*dosyslog)++;
+			dosyslog++;
 			break;
 
 #ifndef NO_FTP	    
@@ -358,26 +337,30 @@ static void parse_args(int argc, char *argv[],
 #endif	     
 
 		case 'p':
-			(*transproxy)++;
+			transproxy++;
 			break;
 
 #ifndef NO_SHAPER
                 case 'z':
-			*bufsizeout = (unsigned int)atol(optarg);
+			bufsize = (unsigned int)atol(optarg);
+			if (bufsize < 256) {
+				syslog(LOG_ERR, "Too small buffer (%d), must be at least 256 bytes!", bufsize);
+				exit(usage(1));
+			}
 			break;
  
                 case 'm':
-			*max_bandwidth = atol(optarg);
+			max_bandwidth = atol(optarg);
 			break;
  
                 case 'w':
-			*random_wait = atol(optarg);
+			random_wait = atol(optarg);
 			break;
  
                 case 'o':
-			*wait_in_out = atol(optarg);
-			wait_in=*wait_in_out & 1;
-			wait_out=*wait_in_out & 2;
+			wait_in_out = atol(optarg);
+			wait_in     = wait_in_out & 1;
+			wait_out    = wait_in_out & 2;
 			break;
 #endif
 		case 'v':
@@ -393,20 +376,20 @@ static void parse_args(int argc, char *argv[],
 		exit(usage(1));
 
 	if ((portdesc = getservbyname(tport, "tcp")) != NULL)
-		*target_port = ntohs(portdesc->s_port);
+		target_port = ntohs(portdesc->s_port);
 	else
-		*target_port = atol(tport);
+		target_port = atol(tport);
     
 	/* only check local port if not running from inetd */
-	if (!(*inetd)) {
+	if (!inetd) {
 		if (lport == NULL)
 			exit(usage(1));
 	 
 		if ((portdesc = getservbyname(lport, "tcp")) != NULL) 
-			*local_port = ntohs(portdesc->s_port);
+			local_port = ntohs(portdesc->s_port);
 		else
-			*local_port = atol(lport);
-	} /* if *inetd */
+			local_port = atol(lport);
+	}
 
 	if (!ident) {
 		if ((ident = (char *) strrchr(argv[0], '/')))
@@ -419,11 +402,11 @@ static void parse_args(int argc, char *argv[],
 	/* some kind of ftp being forwarded? */
 	if (ftp_type) {
 		if (!strncasecmp(ftp_type, "port", 4)) 
-			*ftp = FTP_PORT;
+			ftp = FTP_PORT;
 		else if (!strncasecmp(ftp_type, "pasv", 4))
-			*ftp = FTP_PASV;
+			ftp = FTP_PASV;
 		else if (!strncasecmp(ftp_type, "both", 4))
-			*ftp = FTP_PORT | FTP_PASV;
+			ftp = FTP_PORT | FTP_PASV;
 		else
 			exit(usage(1));
 	}
@@ -894,7 +877,9 @@ static int bindsock(char *addr, int port, int fail)
 {
 	int ret, sd;
 	struct sockaddr_in server;
-     
+	int reuse_addr = 1;                 /* allow address reuse */
+	struct linger linger_opt = { 0, 0}; /* do not linger */
+
 	/*
 	 * Get a socket to work with.  This socket will
 	 * be in the Internet domain, and will be a
@@ -991,26 +976,7 @@ static int bindsock(char *addr, int port, int fail)
 
 int main(int argc, char *argv[])
 {
-	char *target_addr;
-	int target_port;
-	char *local_addr;
-	int local_port;
-	int inetd = 0;
-	char *target_ip;
-	char *ip_to_target;
-
-	debug("parse args\n");
-	parse_args(argc, argv, &target_addr, &target_port, &local_addr, 
-		   &local_port, &timeout, &dodebug, &inetd, &dosyslog, &bind_addr,
-#ifndef NO_FTP
-		   &ftp, 
-#endif
-		   &transproxy, 
-#ifndef NO_SHAPER
-		   &bufsize, &max_bandwidth, &random_wait,
-		   &wait_in_out,
-#endif
-                   &connect_str);
+	parse_args(argc, argv);
 
 	if (inetd) {
 		int targetsock;
