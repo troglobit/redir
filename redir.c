@@ -93,7 +93,7 @@ int dosyslog = 0;
 int reuse_addr = 1; /* allow address reuse */
 struct linger linger_opt = { 0, 0}; /* do not linger */
 char *bind_addr = NULL;
-struct sockaddr_in addr_out;
+
 int timeout = 0;
 extern char *__progname;
 
@@ -135,8 +135,8 @@ int     deny_severity = LOG_WARNING;
 #define REDIR_OUT 0
 
 /* prototype anything needing it */
-void do_accept(int servsock, struct sockaddr_in *target);
-int bindsock(char *addr, int port, int fail);
+static void do_accept(int servsock, struct sockaddr_in *target);
+static int bindsock(char *addr, int port, int fail);
 
 #ifndef NO_SHAPER
 /* Used in this program to write something in a socket, it has the same
@@ -696,12 +696,11 @@ void doproxyconnect(int socket)
 
 /* lwait for a connection and move into copyloop...  again,
    ftp redir will call this, so we don't dupilcate it. */
-
-void do_accept(int servsock, struct sockaddr_in *target)
+static void do_accept(int servsock, struct sockaddr_in *target)
 {
 	int clisock, status;
 	int targetsock;
-	struct sockaddr_in client;
+	struct sockaddr_in client, addr_out;
 	socklen_t clientlen = sizeof(client);
 	int accept_errno;
      
@@ -812,13 +811,29 @@ void do_accept(int servsock, struct sockaddr_in *target)
 		addr_out.sin_port = 0;
 	}
           
+	/* Set up outgoing IP addr (optional) */
+	if (bind_addr && !transproxy) {
+		struct hostent *hp;
+
+		addr_out.sin_family = AF_INET;
+		addr_out.sin_port = 0;
+		hp = gethostbyname(bind_addr);
+		if (hp == NULL) {
+			fprintf(stderr, "%s: cannot resolve forced outgoing IP address.\n", bind_addr);
+			exit(1);
+		}
+		memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
+
+		debug1("IP address for target is %s\n", inet_ntoa(addr_out.sin_addr));
+	}
+
 	if (bind_addr || transproxy) {
 		/* this only makes sense if an outgoing IP addr has been forced;
 		 * at this point, we have a valid targetsock to bind() to.. */
 		/* also, if we're in transparent proxy mode, this option
 		   never makes sense */
 
-		if (bind(targetsock, (struct  sockaddr  *) &addr_out, sizeof(struct sockaddr_in)) < 0) {
+		if (bind(targetsock, (struct sockaddr *)&addr_out, sizeof(addr_out)) < 0) {
 			perror("bind_addr: cannot bind to forcerd outgoing addr");
 
 			/* the port parameter fetch the really port we are listening,
@@ -832,7 +847,7 @@ void do_accept(int servsock, struct sockaddr_in *target)
 		debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
 	}
 
-	if (connect(targetsock, (struct  sockaddr  *) target, sizeof(struct sockaddr_in)) < 0) {
+	if (connect(targetsock, (struct sockaddr *)target, sizeof(struct sockaddr_in)) < 0) {
 		perror("target: connect");
 
 		if (dosyslog)
@@ -875,7 +890,7 @@ void do_accept(int servsock, struct sockaddr_in *target)
  * fail is true if we should just return a -1 on error, false if we
  * should bail.
  */
-int bindsock(char *addr, int port, int fail) 
+static int bindsock(char *addr, int port, int fail)
 {
 	int ret, sd;
 	struct sockaddr_in server;
@@ -976,8 +991,6 @@ int bindsock(char *addr, int port, int fail)
 
 int main(int argc, char *argv[])
 {
-
-	struct sockaddr_in target;
 	char *target_addr;
 	int target_port;
 	char *local_addr;
@@ -999,51 +1012,11 @@ int main(int argc, char *argv[])
 #endif
                    &connect_str);
 
-	/* Set up target */
-	memset(&target, 0, sizeof(target));
-	target.sin_family = AF_INET;
-	target.sin_port = htons(target_port);
-	if (target_addr != NULL) {
-		struct hostent *hp;
-
-		debug1("target is %s\n", target_addr);
-		if ((hp = gethostbyname(target_addr)) == NULL) {
-			fprintf(stderr, "%s: host unknown.\n", target_addr);
-			exit(1);
-		}
-		memcpy(&target.sin_addr, hp->h_addr, hp->h_length);
-	} else {
-		debug("target is default\n");
-		target.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
-	}
-
-	target_ip = strdup(inet_ntoa(target.sin_addr));
-	debug1("target IP address is %s\n", target_ip);
-	debug1("target port is %d\n", target_port);
-
-	/* Set up outgoing IP addr (optional);
-	 * we have to wait for bind until targetsock = socket() is done
-	 */
-	if (bind_addr && !transproxy) {
-		struct hostent *hp;
-
-		fprintf(stderr, "bind_addr is %s\n", bind_addr);
-		addr_out.sin_family = AF_INET;
-		addr_out.sin_port = 0;
-		if ((hp = gethostbyname(bind_addr)) == NULL) {
-			fprintf(stderr, "%s: cannot resolve forced outgoing IP address.\n", bind_addr);
-			exit(1);
-		}
-		memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
-
-		ip_to_target = strdup(inet_ntoa(addr_out.sin_addr));
-		debug1("IP address for target is %s\n", ip_to_target);
-	}
-           
 	if (inetd) {
 		int targetsock;
-		struct sockaddr_in client;
-		socklen_t  client_size = sizeof(client);
+		struct sockaddr_in target;
+		struct sockaddr_in client, addr_out;
+		socklen_t client_size = sizeof(client);
 
 #ifdef USE_TCP_WRAPPERS
 		request_init(&request, RQ_DAEMON, ident, RQ_FILE, 0, 0);
@@ -1059,7 +1032,30 @@ int main(int argc, char *argv[])
 			debug1("peer IP is %s\n", inet_ntoa(client.sin_addr));
 			debug1("peer socket is %d\n", ntohs(client.sin_port));
 		}
-		if ((targetsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+
+		memset(&target, 0, sizeof(target));
+		target.sin_family = AF_INET;
+		target.sin_port = htons(target_port);
+		if (target_addr != NULL) {
+			struct hostent *hp;
+
+			debug1("target is %s\n", target_addr);
+			if ((hp = gethostbyname(target_addr)) == NULL) {
+				fprintf(stderr, "%s: host unknown.\n", target_addr);
+				exit(1);
+			}
+			memcpy(&target.sin_addr, hp->h_addr, hp->h_length);
+		} else {
+			debug("target is default\n");
+			target.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
+		}
+
+		target_ip = strdup(inet_ntoa(target.sin_addr));
+		debug1("target IP address is %s\n", target_ip);
+		debug1("target port is %d\n", target_port);
+
+		targetsock = socket(AF_INET, SOCK_STREAM, 0);
+		if (targetsock < 0) {
 			perror("target: socket");
 
 			if (dosyslog)
@@ -1073,11 +1069,26 @@ int main(int argc, char *argv[])
 			addr_out.sin_port = 0;
 		}
 
+		/* Set up outgoing IP addr (optional) */
+		if (bind_addr && !transproxy) {
+			struct hostent *hp;
+
+			addr_out.sin_family = AF_INET;
+			addr_out.sin_port = 0;
+			hp = gethostbyname(bind_addr);
+			if (hp == NULL) {
+				fprintf(stderr, "%s: cannot resolve forced outgoing IP address.\n", bind_addr);
+				exit(1);
+			}
+			memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
+
+			debug1("IP address for target is %s\n", inet_ntoa(addr_out.sin_addr));
+		}
+
 		if (bind_addr || transproxy) {
 			/* this only makes sense if an outgoing IP addr has been forced;
 			 * at this point, we have a valid targetsock to bind() to.. */
-			if (bind(targetsock, (struct  sockaddr  *) &addr_out, 
-				 sizeof(addr_out)) < 0) {
+			if (bind(targetsock, (struct sockaddr *)&addr_out, sizeof(addr_out)) < 0) {
 				perror("bind_addr: cannot bind to forcerd outgoing addr");
 				 
 				if (dosyslog)
@@ -1088,7 +1099,7 @@ int main(int argc, char *argv[])
 			debug1("outgoing IP is %s\n", inet_ntoa(addr_out.sin_addr));
 		}
 
-		if (connect(targetsock, (struct sockaddr *) &target, sizeof(target)) < 0) {
+		if (connect(targetsock, (struct sockaddr *)&target, sizeof(target)) < 0) {
 			perror("target: connect");
 
 			if (dosyslog)
@@ -1118,11 +1129,33 @@ int main(int argc, char *argv[])
 		 * will be connected to the client.  client will
 		 * contain the address of the client.
 		 */
-		while (1) 
-			do_accept(sd, &target);
-	}
+		while (1) {
+			struct sockaddr_in target;
 
-	/* this should really never be reached */
+			memset(&target, 0, sizeof(target));
+			target.sin_family = AF_INET;
+			target.sin_port = htons(target_port);
+			if (target_addr != NULL) {
+				struct hostent *hp;
+
+				debug1("target is %s\n", target_addr);
+				if ((hp = gethostbyname(target_addr)) == NULL) {
+					fprintf(stderr, "%s: host unknown.\n", target_addr);
+					exit(1);
+				}
+				memcpy(&target.sin_addr, hp->h_addr, hp->h_length);
+			} else {
+				debug("target is default\n");
+				target.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
+			}
+
+			target_ip = strdup(inet_ntoa(target.sin_addr));
+			debug1("target IP address is %s\n", target_ip);
+			debug1("target port is %d\n", target_port);
+
+			do_accept(sd, &target);
+		}
+	}
 
 	return 0;
 }
