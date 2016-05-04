@@ -417,8 +417,6 @@ static void parse_args(int argc, char *argv[])
 			exit(usage(1));
 	}
 #endif	      
-    
-	openlog(ident, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 }
 
 #ifndef NO_FTP
@@ -934,7 +932,15 @@ static int bindsock(char *addr, int port, int fail)
 
 int main(int argc, char *argv[])
 {
+	int log_opts = LOG_PID | LOG_CONS | LOG_NDELAY;
+
 	parse_args(argc, argv);
+
+#ifdef LOG_PERROR
+	if (!background && do_syslog < 1)
+		log_opts |= LOG_PERROR;
+#endif
+	openlog(ident, log_opts, LOG_DAEMON);
 
 	if (inetd) {
 		int targetsock;
