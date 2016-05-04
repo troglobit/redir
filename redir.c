@@ -486,7 +486,7 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	}
 
 	lport = ntohs(sockname.sin_port);
-	lporthi = (lport >> 8 ) & 0xff;
+	lporthi = (lport >> 8) & 0xff;
 	lportlo = lport & 0xff;
 
 	if (ftpsrv == 0) {
@@ -659,15 +659,15 @@ void doproxyconnect(int socket)
 	char buf[128];
 
 	/* write CONNECT string to proxy */
-	sprintf((char *) &buf, "CONNECT %s HTTP/1.0\n\n", connect_str);
-	x = write(socket, (char *) &buf, strlen(buf));
+	sprintf((char *)&buf, "CONNECT %s HTTP/1.0\n\n", connect_str);
+	x = write(socket, (char *)&buf, strlen(buf));
 	if (x < 1) {
 		syslog(LOG_ERR, "Failed writing to proxy: %s", strerror(errno));
 		exit(1);
 	}
 
 	/* now read result */
-	x = read(socket, (char *) &buf, sizeof(buf));
+	x = read(socket, (char *)&buf, sizeof(buf));
 	if (x < 1) {
 		syslog(LOG_ERR, "Failed reading reply from proxy: %s", strerror(errno));
 		exit(1);
@@ -958,7 +958,7 @@ int main(int argc, char *argv[])
 			refuse(&request);
 #endif /* USE_TCP_WRAPPERS */
 
-		if (!getpeername(0, (struct sockaddr *) &client, &client_size)) {
+		if (!getpeername(0, (struct sockaddr *)&client, &client_size)) {
 			debug("peer IP is %s", inet_ntoa(client.sin_addr));
 			debug("peer socket is %d", ntohs(client.sin_port));
 		}
