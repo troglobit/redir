@@ -289,7 +289,7 @@ static void parse_args(int argc, char *argv[])
 	char *ftp_type = NULL;
 #endif
  
-	while ((opt = getopt_long(argc, argv, "dhisfpI:t:b:x:z:m:w:o:v", long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "dhinsfpI:t:b:x:z:m:w:o:v", long_options, NULL)) != -1) {
 		switch (opt) {
 		case 'x':
 			connect_str = optarg;
