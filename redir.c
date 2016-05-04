@@ -122,12 +122,6 @@ char *ident       = NULL;
 #define FTP_PASV 2
 #endif
 
-#ifdef USE_TCP_WRAPPERS
-struct request_info request;
-int     allow_severity = LOG_INFO;
-int     deny_severity = LOG_WARNING;
-#endif /* USE_TCP_WRAPPERS */
-
 #define REDIR_IN  1
 #define REDIR_OUT 0
 
@@ -682,6 +676,118 @@ void doproxyconnect(int socket)
 	/* HTTP/1.0 200 Connection established */
 }
 
+#ifdef USE_TCP_WRAPPERS
+static int verify_request(int sd)
+{
+	struct request_info ri;
+
+	request_init(&ri, RQ_DAEMON, ident, RQ_FILE, sd, 0);
+	sock_host(&ri);
+	sock_hostname(ri.client);
+	sock_hostaddr(ri.client);
+
+	if (!hosts_access(&ri)) {
+		syslog(LOG_WARNING, "Connection from %s DENIED", eval_client(&ri));
+		refuse(&ri);
+		return -1;
+	}
+
+	syslog(LOG_INFO, "Connection from %s ALLOWED", eval_client(&ri));
+
+	return 0;
+}
+#endif /* USE_TCP_WRAPPERS */
+
+static int target_init(char *addr, int port, struct sockaddr_in *target)
+{
+	target->sin_family = AF_INET;
+	target->sin_port = htons(port);
+	if (addr) {
+		struct hostent *hp;
+
+		debug("target is %s", addr);
+		hp = gethostbyname(addr);
+		if (!hp) {
+			syslog(LOG_ERR, "Unknown host %s", addr);
+			return -1;
+		}
+		memcpy(&target->sin_addr, hp->h_addr, hp->h_length);
+	} else {
+		debug("target is default");
+		target->sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
+	}
+
+	return 0;
+}
+
+static int target_connect(int client, struct sockaddr_in *target)
+{
+	int sd;
+	char *target_ip;
+	struct sockaddr_in peer, addr_out;
+	socklen_t peerlen = sizeof(peer);
+
+	memset(&peer, 0, sizeof(peer));
+	memset(&addr_out, 0, sizeof(addr_out));
+
+#ifdef USE_TCP_WRAPPERS
+	if (verify_request(sd))
+		return -1;
+#endif /* USE_TCP_WRAPPERS */
+
+	if (!getpeername(client, (struct sockaddr *)&peer, &peerlen)) {
+		debug("peer IP is %s", inet_ntoa(peer.sin_addr));
+		debug("peer socket is %d", ntohs(peer.sin_port));
+	}
+
+	target_ip = strdup(inet_ntoa(target->sin_addr));
+	debug("target IP address is %s", target_ip);
+	debug("target port is %d", ntohs(target->sin_port));
+
+	if (transproxy) {
+		memcpy(&addr_out, &peer, sizeof(struct sockaddr_in));
+		addr_out.sin_port = 0;
+	}
+
+	/* Set up outgoing IP addr (optional) */
+	if (bind_addr && !transproxy) {
+		struct hostent *hp;
+
+		addr_out.sin_family = AF_INET;
+		addr_out.sin_port = 0;
+		hp = gethostbyname(bind_addr);
+		if (!hp) {
+			syslog(LOG_ERR, "Failed resolving outbound IP address, %s: %s", bind_addr, strerror(errno));
+			return -1;
+		}
+		memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
+
+		debug("IP address for target is %s", inet_ntoa(addr_out.sin_addr));
+	}
+
+	sd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sd < 0) {
+		syslog(LOG_ERR, "Failed creating target socket: %s", strerror(errno));
+		return -1;
+	}
+
+	if (bind_addr || transproxy) {
+		if (bind(sd, (struct sockaddr *)&addr_out, sizeof(addr_out)) < 0) {
+			syslog(LOG_ERR, "Failed binding to outbound address: %s", strerror(errno));
+			return -1;
+		}
+	}
+
+	if (connect(sd, (struct sockaddr *)target, sizeof(*target)) < 0) {
+		syslog(LOG_ERR, "Failed connecting to target %s: %s", target_ip, strerror(errno));
+		return -1;
+	}
+
+	syslog(LOG_INFO, "Connecting %s:%d to %s:%d", inet_ntoa(peer.sin_addr),
+	       ntohs(peer.sin_port), target_ip, ntohs(target->sin_port));
+
+	return sd;
+}
 
 /* lwait for a connection and move into copyloop...  again,
    ftp redir will call this, so we don't dupilcate it. */
@@ -711,9 +817,6 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 		}
 	}
      
-	debug("peer IP is %s", inet_ntoa(client.sin_addr));
-	debug("peer socket is %d", ntohs(client.sin_port));
-
 	/*
 	 * Double fork here so we don't have to wait later
 	 * This detaches us from our parent so that the parent
@@ -754,79 +857,9 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 	}
      
 	/* We are now the grandchild */
-
-#ifdef USE_TCP_WRAPPERS
-	request_init(&request, RQ_DAEMON, ident, RQ_FILE, clisock, 0);
-	sock_host(&request);
-	sock_hostname(request.client);
-	sock_hostaddr(request.client);
-
-	if (!hosts_access(&request)) {
-		refuse(&request);
-		_exit(0);
-	}
-
-	syslog(LOG_INFO, "Connection from %s", eval_client(&request));
-#endif /* USE_TCP_WRAPPERS */
-
-	if ((targetsock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		syslog(LOG_ERR, "Failed creating target socket: %s", strerror(errno));
+	targetsock = target_connect(clisock, target);
+	if (targetsock < 0)
 		_exit(1);
-	}
-
-	if (transproxy) {
-		memcpy(&addr_out, &client, sizeof(struct sockaddr_in));
-		addr_out.sin_port = 0;
-	}
-          
-	/* Set up outgoing IP addr (optional) */
-	if (bind_addr && !transproxy) {
-		struct hostent *hp;
-
-		addr_out.sin_family = AF_INET;
-		addr_out.sin_port = 0;
-		hp = gethostbyname(bind_addr);
-		if (hp == NULL) {
-			syslog(LOG_ERR, "Failed resolving outbound IP address, %s: %s", bind_addr, strerror(errno));
-			exit(1);
-		}
-		memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
-
-		debug("IP address for target is %s", inet_ntoa(addr_out.sin_addr));
-	}
-
-	if (bind_addr || transproxy) {
-		/* this only makes sense if an outgoing IP addr has been forced;
-		 * at this point, we have a valid targetsock to bind() to.. */
-		/* also, if we're in transparent proxy mode, this option
-		   never makes sense */
-
-		if (bind(targetsock, (struct sockaddr *)&addr_out, sizeof(addr_out)) < 0) {
-			/* the port parameter fetch the really port we are listening,
-			 * it should only be different if the input value is 0 (let
-			 * the system pick a port) */
-			syslog(LOG_ERR, "Failed binding target socket: %s", strerror(errno));
-			_exit(1);
-		}
-		debug("outgoing IP is %s", inet_ntoa(addr_out.sin_addr));
-	}
-
-	if (connect(targetsock, (struct sockaddr *)target, sizeof(struct sockaddr_in)) < 0) {
-		syslog(LOG_ERR, "Failed connecting to target %s: %s", inet_ntoa(addr_out.sin_addr), strerror(errno));
-		_exit(1);
-	}
-     
-	debug("connected to %s", inet_ntoa(target->sin_addr));
-	if (do_syslog) { /* XXX: Check loglevel >= LOG_INFO in the future */
-		char tmp1[20] = "", tmp2[20] = "";
-
-		inet_ntop(AF_INET, &client.sin_addr, tmp1, sizeof(tmp1));
-		inet_ntop(AF_INET, &target->sin_addr, tmp2, sizeof(tmp2));
-	  
-		syslog(LOG_INFO, "Connecting %s:%d to %s:%d",
-		       tmp1, ntohs(client.sin_port),
-		       tmp2, ntohs(target->sin_port));
-	}
 
 	/* do proxy stuff */
 	if (connect_str)
@@ -952,99 +985,18 @@ int main(int argc, char *argv[])
 	openlog(ident, log_opts, LOG_DAEMON);
 
 	if (inetd) {
-		int targetsock;
-		char *target_ip;
+		int sd;
 		struct sockaddr_in target;
-		struct sockaddr_in client, addr_out;
-		socklen_t client_size = sizeof(client);
 
 		memset(&target, 0, sizeof(target));
-		memset(&client, 0, sizeof(client));
-		memset(&addr_out, 0, sizeof(addr_out));
-
-#ifdef USE_TCP_WRAPPERS
-		request_init(&request, RQ_DAEMON, ident, RQ_FILE, 0, 0);
-		sock_host(&request);
-		sock_hostname(request.client);
-		sock_hostaddr(request.client);
-	
-		if (!hosts_access(&request))
-			refuse(&request);
-#endif /* USE_TCP_WRAPPERS */
-
-		if (!getpeername(0, (struct sockaddr *)&client, &client_size)) {
-			debug("peer IP is %s", inet_ntoa(client.sin_addr));
-			debug("peer socket is %d", ntohs(client.sin_port));
-		}
-
-		memset(&target, 0, sizeof(target));
-		target.sin_family = AF_INET;
-		target.sin_port = htons(target_port);
-		if (target_addr != NULL) {
-			struct hostent *hp;
-
-			debug("target is %s", target_addr);
-			if ((hp = gethostbyname(target_addr)) == NULL) {
-				syslog(LOG_ERR, "Unknown host %s", target_addr);
-				exit(1);
-			}
-			memcpy(&target.sin_addr, hp->h_addr, hp->h_length);
-		} else {
-			debug("target is default");
-			target.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
-		}
-
-		target_ip = strdup(inet_ntoa(target.sin_addr));
-		debug("target IP address is %s", target_ip);
-		debug("target port is %d", target_port);
-
-		targetsock = socket(AF_INET, SOCK_STREAM, 0);
-		if (targetsock < 0) {
-			syslog(LOG_ERR, "Failed creating target socket: %s", strerror(errno));
-			exit(1);
-		}
-
-		if (transproxy) {
-			memcpy(&addr_out, &client, sizeof(struct sockaddr_in));
-			addr_out.sin_port = 0;
-		}
-
-		/* Set up outgoing IP addr (optional) */
-		if (bind_addr && !transproxy) {
-			struct hostent *hp;
-
-			addr_out.sin_family = AF_INET;
-			addr_out.sin_port = 0;
-			hp = gethostbyname(bind_addr);
-			if (hp == NULL) {
-				syslog(LOG_ERR, "Cannot resolve outbound IP address %s", bind_addr);
-				exit(1);
-			}
-			memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
-
-			debug("IP address for target is %s", inet_ntoa(addr_out.sin_addr));
-		}
-
-		if (bind_addr || transproxy) {
-			/* this only makes sense if an outgoing IP addr has been forced;
-			 * at this point, we have a valid targetsock to bind() to.. */
-			if (bind(targetsock, (struct sockaddr *)&addr_out, sizeof(addr_out)) < 0) {
-				syslog(LOG_ERR, "Failed binding to outbound address: %s", strerror(errno));
-				return 1;
-			}
-			debug("outgoing IP is %s", inet_ntoa(addr_out.sin_addr));
-		}
-
-		if (connect(targetsock, (struct sockaddr *)&target, sizeof(target)) < 0) {
-			syslog(LOG_ERR, "Failed connecting to target %s: %s", target_ip, strerror(errno));
+		if (target_init(target_addr, target_port, &target))
 			return 1;
-		}
 
-		syslog(LOG_INFO, "Connecting %s:%d to %s:%d", inet_ntoa(client.sin_addr), ntohs(client.sin_port),
-		       target_ip, ntohs(target.sin_port));
+		sd = target_connect(STDIN_FILENO, &target);
+		if (sd < 0)
+			return 1;
 
-		/* Just start copying - one side of the loop is stdin - 0 */
-		copyloop(0, targetsock, timeout);
+		copyloop(STDIN_FILENO, sd, timeout);
 	} else {
 		int sd;
 	
@@ -1068,29 +1020,11 @@ int main(int argc, char *argv[])
 		 * contain the address of the client.
 		 */
 		while (1) {
-			char *target_ip;
 			struct sockaddr_in target;
 
 			memset(&target, 0, sizeof(target));
-			target.sin_family = AF_INET;
-			target.sin_port = htons(target_port);
-			if (target_addr != NULL) {
-				struct hostent *hp;
-
-				debug("target is %s", target_addr);
-				if ((hp = gethostbyname(target_addr)) == NULL) {
-					syslog(LOG_ERR, "Unknown host %s", target_addr);
-					exit(1);
-				}
-				memcpy(&target.sin_addr, hp->h_addr, hp->h_length);
-			} else {
-				debug("target is default");
-				target.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
-			}
-
-			target_ip = strdup(inet_ntoa(target.sin_addr));
-			debug("target IP address is %s", target_ip);
-			debug("target port is %d", target_port);
+			if (target_init(target_addr, target_port, &target))
+				return 1;
 
 			do_accept(sd, &target);
 		}
