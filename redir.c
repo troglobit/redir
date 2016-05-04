@@ -1042,10 +1042,11 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (local_addr)
-			sd = bindsock(local_addr, local_port, 0);
-		else
-			sd = bindsock(NULL, local_port, 0);
+		sd = bindsock(local_addr, local_port, 0);
+		if (sd == -1) {
+			syslog(LOG_ERR, "Failed bindsock(): %s", strerror(errno));
+			return 1;
+		}
 
 		/*
 		 * Accept connections.  When we accept one, ns
