@@ -84,13 +84,13 @@
 #include <tcpd.h>
 #endif
 
-#define debug(fmt, args...)	if (dodebug) syslog(LOG_DEBUG, fmt, ##args)
+#define debug(fmt, args...)	if (do_debug) syslog(LOG_DEBUG, fmt, ##args)
 
-int inetd = 0;
+int inetd      = 0;
 int background = 1;
-int timeout = 0;
-int dodebug = 0;
-int dosyslog = 0;
+int timeout    = 0;
+int do_debug   = 0;
+int do_syslog  = 0;
 
 char *target_ip;
 char *target_addr;
@@ -306,7 +306,7 @@ static void parse_args(int argc, char *argv[])
 			break;
 
 		case 'd':
-			dodebug++;
+			do_debug++;
 			break;
 
 		case 'h':
@@ -327,10 +327,11 @@ static void parse_args(int argc, char *argv[])
 
 		case 'n':
 			background = 0;
+			do_syslog--;
 			break;
 
 		case 's':
-			dosyslog++;
+			do_syslog++;
 			break;
 
 #ifndef NO_FTP	    
@@ -809,7 +810,7 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 	}
      
 	debug("connected to %s", inet_ntoa(target->sin_addr));
-	if (dosyslog) {	/* XXX: Check loglevel >= LOG_INFO in the future */
+	if (do_syslog) { /* XXX: Check loglevel >= LOG_INFO in the future */
 		char tmp1[20] = "", tmp2[20] = "";
 
 		inet_ntop(AF_INET, &client.sin_addr, tmp1, sizeof(tmp1));
