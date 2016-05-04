@@ -6,14 +6,11 @@
 .Nd redirect TCP connections
 .Sh SYNOPSIS
 .Nm
-.Op Fl -laddr=IP
-.Op Fl -lport=PORT
-.Op Fl -caddr=HOST
-.Op Fl -cport=PORT
 .Op Fl -debug
 .Op Fl -foreground
 .Op Fl -syslog
 .Op Fl -ident=NAME
+.Op Fl -inetd
 .Op Fl -timeout=SEC
 .Op Fl -bind=IP
 .Op Fl -ftp=TYPE
@@ -23,41 +20,47 @@
 .Op Fl -max-bandwidth=BPS
 .Op Fl -random-wait=MSEC
 .Op Fl -wait-in-out=<1,2,3>
-.Pp
-.Nm
-.Fl -inetd
-.Op Fl -caddr=HOST
-.Op Fl -cport=PORT
-.Op Fl -debug
-.Op Fl -syslog
-.Op Fl -ident=NAME
-.Op Fl -timeout=SEC
-.Op Fl -ftp=TYPE
-.Op Fl -transproxy
-.Op Fl -connect=HOST:PORT
-.Op Fl -bufsize=BYTES
-.Op Fl -max-bandwidth=BPS
-.Op Fl -random-wait=MSEC
-.Op Fl -wait-in-out=<1,2,3>
+.Ar [SRC]:PORT
+.Ar [DST]:PORT
 .Sh DESCRIPTION
 .Nm
-redirects TCP connections coming in to a local port to a specified
-address/port combination.
+redirects TCP connections coming in on a local port,
+.Ar [SRC]:PORT ,
+to a specified address/port combination,
+.Ar [DST]:PORT .
+Both the
+.Ar SRC
+and
+.Ar DST
+arguments can be left out,
+.Nm
+will then use
+.Ar 0.0.0.0 .
 .Pp
-It may be run either from inetd or as a standalone daemon.
+.Nm
+can be run either from inetd or as a standalone daemon.  In
+.Fl -inetd
+mode the listening SRC:PORT combo is handled by another process, usually
+.Nm inetd ,
+and a connected socket is handed over to
+.Nm
+via stdin.  Hence only
+.Ar [DST]:PORT
+is required in
+.Fl -inetd
+mode.  In standalone mode
+.Nm
+can run either in the foreground,
+.Fl n ,
+or in the background, detached like a proper UNIX daemon.  This is the
+default.  When running in the foreground log messages are also printed
+to stderr, unless the
+.Fl s
+flag is given.
+.Pp
 Depending on how redir was compiled, not all options may be available.
 .Sh OPTIONS
 .Bl -tag -width Ds
-.It Fl a, Fl -laddr=IP
-IP address to bind to when listening for connections (when not
-running from inetd) 
-.It Fl l, Fl -lport=PORT
-Specifies port to listen for connections on (when not running from
-inetd)
-.It Fl c, Fl -caddr=HOST
-Specifies remote host to connect to. (localhost if omitted)
-.It Fl r, Fl -cport=PORT
-Specifies port to connect to.
 .It Fl i, Fl -inetd
 Run as a process started from
 .Xr inetd 1 ,
@@ -94,9 +97,7 @@ See the file transproxy.txt in the distribution for details.
 .It Fl x, Fl -connect
 Redirects connections through an HTTP proxy which supports the CONNECT
 command.  Specify the address and port of the proxy using
-.Fl -caddr
-and
-.Fl -cport .
+.Ar [DST]:PORT .
 .Fl -connect
 requires the hostname and port which the HTTP proxy will be asked to
 connect to.
