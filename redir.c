@@ -172,7 +172,7 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 		/* wait to be sure tu be below the allowed bandwidth */
 		bits = size * 8;
 		debug("bandwidth wait: %lu", 1000 * bits / max_bandwidth);
-		waitbw.tv_sec  = bits/max_bandwidth;
+		waitbw.tv_sec  = bits / max_bandwidth;
 		waitbw.tv_usec = (1000 * (bits % max_bandwidth)) / max_bandwidth;
 
 		select(1, &empty, NULL, NULL, &waitbw);
@@ -193,36 +193,38 @@ static int usage(int code)
 		"Usage: %s [-hidtnsIxbfpzmwov] [SRC]:PORT [DST]:PORT\n", __progname);
 	fprintf(stderr, "\n"
 		"Options:\n"
+		"  -b,--bind=IP            Force specific IP to bind() to when listening\n"
+		"                          for incoming connections\n"
 		"  -h,--help               Show this help text\n"
-		"  -i,--inetd              Run from inetd, SRC:PORT comes from stdin\n"
 		"  -d,--debug              Enable debugging info\n"
-		"  -t,--timeout=SEC        Set timeout to SEC seconds\n"
-		"  -n,--foreground         Run in foreground, do not detach from terminal\n"
-		"  -s,--syslog             Log messages to syslog\n"
+#ifndef NO_FTP
+		"  -f,--ftp=TYPE           Redirect FTP connections.  Where type is\n"
+		"                          one of: 'port', 'pasv', or 'both'\n"
+#endif
+		"  -i,--inetd              Run from inetd, SRC:PORT comes from stdin\n"
+		"                          Usage: %s [OPTIONS] [DST]:PORT\n"
 		"  -I,--ident=NAME         Identity, tag syslog messages with NAME\n"
+		"  -n,--foreground         Run in foreground, do not detach from terminal\n"
+		"  -p,--transproxy         run in linux's transparent proxy mode\n"
+		"  -s,--syslog             Log messages to syslog\n"
+		"  -t,--timeout=SEC        Set timeout to SEC seconds\n"
+		"  -v,--version            Show program version\n"
 		"  -x,--connect=STR        CONNECT string passed to proxy server\n"
 #ifdef USE_TCP_WRAPPERS
 		"                          Also used as service name for TCP wrappers\n"
 #endif
-		"  -b,--bind=IP            Force specific IP to bind() to when listening\n"
-		"                          for incoming connections\n"
-
-#ifndef NO_FTP
-		"  -f,--ftp=TYPE           Redirect ftp connections.  Where type is\n"
-		"                          one of: 'port', 'pasv', or 'both'\n"
-#endif
-		"  -p,--transproxy         run in linux's transparent proxy mode\n"
 #ifndef NO_SHAPER
-		"  -z,--bufsize=BYTES      size of the traffic shaping buffer\n"
-		"  -m,--max-bandwidth=BPS  limit the bandwidth\n"
+		"\n"
+		"Traffic Shaping:\n"
+		"  -m,--max-bandwidth=BPS  Limit the bandwidth to BPS bits/second\n"
+		"  -o,--wait-in-out=FLAG   Wait for in(1), out(2), or in&out(3)\n"
 		"  -w,--random-wait=MSEC   Wait MSEC milliseconds before each packet\n"
-		"  -o,--wait-in-out=FLAG   1 wait for in, 2 out, 3 in&out\n"
+		"  -z,--bufsize=BYTES      Size of the traffic shaping buffer\n"
 #endif
-		"  -v,--version            Show program version\n"
 		"\n"
 		"SRC and DST are optional, %s will revert to use 0.0.0.0 (ANY)\n"
 		"Bug report address: %s\n"
-		"\n", __progname, PACKAGE_BUGREPORT);
+		"\n", __progname, __progname, PACKAGE_BUGREPORT);
 
 	return code;
 }
@@ -287,14 +289,18 @@ static void parse_args(int argc, char *argv[])
 	char src[INET6_ADDRSTRLEN] = "", dst[INET6_ADDRSTRLEN] = "";
 #ifndef NO_FTP
 	char *ftp_type = NULL;
+#define FTP_OPTS "f"
+#else
+#define FTP_OPTS ""
 #endif
- 
-	while ((opt = getopt_long(argc, argv, "dhinsfpI:t:b:x:z:m:w:o:v", long_options, NULL)) != -1) {
-		switch (opt) {
-		case 'x':
-			connect_str = optarg;
-			break;
 
+#ifndef NO_SHAPER
+#define SHAPER_OPTS "m:o:w:z:"
+#else
+#define SHAPER_OPTS ""
+#endif
+	while ((opt = getopt_long(argc, argv, "b:dhiI:npst:vx:" FTP_OPTS SHAPER_OPTS, long_options, NULL)) != -1) {
+		switch (opt) {
 		case 'b':
 			bind_addr = optarg;
 			break;
@@ -303,12 +309,16 @@ static void parse_args(int argc, char *argv[])
 			do_debug++;
 			break;
 
+#ifndef NO_FTP
+		case 'f':
+			ftp_type = optarg;
+			if (!ftp_type)
+				exit(usage(1));
+			break;
+#endif
+
 		case 'h':
 			exit(usage(0));
-
-		case 't':
-			timeout = atol(optarg);
-			break;
 
 		case 'i':
 			inetd++;
@@ -324,37 +334,21 @@ static void parse_args(int argc, char *argv[])
 			do_syslog--;
 			break;
 
-		case 's':
-			do_syslog++;
-			break;
-
-#ifndef NO_FTP	    
-		case 'f':
-			ftp_type = optarg;
-			if (!ftp_type)
-				exit(usage(1));
-			break;
-#endif	     
-
 		case 'p':
 			transproxy++;
 			break;
 
-#ifndef NO_SHAPER
-                case 'z':
-			bufsize = (unsigned int)atol(optarg);
-			if (bufsize < 256) {
-				syslog(LOG_ERR, "Too small buffer (%d), must be at least 256 bytes!", bufsize);
-				exit(usage(1));
-			}
+		case 's':
+			do_syslog++;
 			break;
- 
+
+		case 't':
+			timeout = atol(optarg);
+			break;
+
+#ifndef NO_SHAPER
                 case 'm':
 			max_bandwidth = atol(optarg);
-			break;
- 
-                case 'w':
-			random_wait = atol(optarg);
 			break;
  
                 case 'o':
@@ -362,10 +356,26 @@ static void parse_args(int argc, char *argv[])
 			wait_in     = wait_in_out & 1;
 			wait_out    = wait_in_out & 2;
 			break;
-#endif
+
+                case 'w':
+			random_wait = atol(optarg);
+			break;
+
+                case 'z':
+			bufsize = (unsigned int)atol(optarg);
+			if (bufsize < 256) {
+				syslog(LOG_ERR, "Too small buffer (%d), must be at least 256 bytes!", bufsize);
+				exit(usage(1));
+			}
+			break;
+ #endif
 		case 'v':
 			fprintf(stderr, "%s\n", PACKAGE_VERSION);
 			exit(0);
+
+		case 'x':
+			connect_str = optarg;
+			break;
 
 		default:
 			exit(usage(1));
