@@ -1,4 +1,4 @@
-AC_INIT([redir], [2.4-dev], [https://github.com/troglobit/redir/issues])
+AC_INIT([redir], [3.0-dev], [https://github.com/troglobit/redir/issues])
 AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 
 AC_CONFIG_SRCDIR([redir.c])
