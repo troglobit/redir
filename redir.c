@@ -682,6 +682,9 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 	struct sockaddr_in client, addr_out;
 	socklen_t clientlen = sizeof(client);
      
+	memset(&client, 0, sizeof(client));
+	memset(&addr_out, 0, sizeof(addr_out));
+
 	debug("top of accept loop");
 	clisock = accept(servsock, (struct sockaddr *)&client, &clientlen);
 	if (clisock < 0) {
@@ -944,6 +947,10 @@ int main(int argc, char *argv[])
 		struct sockaddr_in target;
 		struct sockaddr_in client, addr_out;
 		socklen_t client_size = sizeof(client);
+
+		memset(&target, 0, sizeof(target));
+		memset(&client, 0, sizeof(client));
+		memset(&addr_out, 0, sizeof(addr_out));
 
 #ifdef USE_TCP_WRAPPERS
 		request_init(&request, RQ_DAEMON, ident, RQ_FILE, 0, 0);
