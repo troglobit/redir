@@ -92,13 +92,11 @@ int timeout    = 0;
 int do_debug   = 0;
 int do_syslog  = 0;
 
-char *target_ip;
-char *target_addr;
-int   target_port;
-char *local_addr;
-int   local_port;
-char *bind_addr = NULL;
-extern char *__progname;
+char *target_addr = NULL;
+int   target_port = 0;
+char *local_addr  = NULL;
+int   local_port  = 0;
+char *bind_addr   = NULL;
 
 #ifndef NO_FTP
 int ftp = 0;
@@ -189,18 +187,14 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 
 static int usage(int code)
 {
+	extern char *__progname;
+
 	fprintf(stderr,"\n"
-		"Usage:\n"
-		"       %s --lport=PORT --cport=PORT [options]\n"
-		"       %s --inetd      --cport=PORT\n", __progname, __progname);
+		"Usage: %s [-hidtnsIxbfpzmwov] [SRC]:PORT [DST]:PORT\n", __progname);
 	fprintf(stderr, "\n"
 		"Options:\n"
 		"  -h,--help               Show this help text\n"
-		"  -l,--lport=PORT         Port to listen on\n"
-		"  -a,--laddr=IP           Address of interface to listen on\n"
-		"  -r,--cport=PORT         Remote port to connect to\n"
-		"  -c,--caddr=HOST         Remote host to connect to\n"
-		"  -i,--inetd              Run from inetd\n"
+		"  -i,--inetd              Run from inetd, SRC:PORT comes from stdin\n"
 		"  -d,--debug              Enable debugging info\n"
 		"  -t,--timeout=SEC        Set timeout to SEC seconds\n"
 		"  -n,--foreground         Run in foreground, do not detach from terminal\n"
@@ -225,19 +219,43 @@ static int usage(int code)
 		"  -o,--wait-in-out=FLAG   1 wait for in, 2 out, 3 in&out\n"
 #endif
 		"  -v,--version            Show program version\n"
-		"\n");
+		"\n"
+		"SRC and DST are optional, %s will revert to use 0.0.0.0 (ANY)\n"
+		"Bug report address: %s\n"
+		"\n", __progname, PACKAGE_BUGREPORT);
 
 	return code;
+}
+
+static int parse_ipport(char *arg, char *buf, size_t len)
+{
+	int port;
+	char *ptr;
+	struct servent *s;
+
+	if (!arg || !buf || !len)
+		return -1;
+
+	ptr = strchr(arg, ':');
+	if (!ptr)
+		return -1;
+
+	*ptr++ = 0;
+	snprintf(buf, len, "%s", arg);
+
+	s = getservbyname(ptr, "tcp");
+	if (s != NULL)
+		port = ntohs(s->s_port);
+	else
+		port = atoi(ptr);
+
+	return port;
 }
 
 static void parse_args(int argc, char *argv[])
 {
 	static struct option long_options[] = {
 		{"help",          no_argument,       0, 'h'},
-		{"lport",         required_argument, 0, 'l'},
-		{"laddr",         required_argument, 0, 'a'},
-		{"cport",         required_argument, 0, 'r'},
-		{"caddr",         required_argument, 0, 'c'},
 		{"bind_addr",     required_argument, 0, 'b'},
 		{"bind",          required_argument, 0, 'b'},
 		{"debug",         no_argument,       0, 'd'},
@@ -264,41 +282,17 @@ static void parse_args(int argc, char *argv[])
 		{0, 0, 0, 0}
 	};
 	
-	int option_index = 0;
 	extern int optind;
 	int opt;
-	struct servent *portdesc;
-	char *lport = NULL;
-	char *tport = NULL;
+	char src[INET6_ADDRSTRLEN] = "", dst[INET6_ADDRSTRLEN] = "";
 #ifndef NO_FTP
 	char *ftp_type = NULL;
 #endif
  
-	target_addr = NULL;
-	target_port = 0;
-	local_addr  = NULL;
-	local_port  = 0;
-
-	while ((opt = getopt_long(argc, argv, "dhisfpI:t:b:a:l:r:c:x:z:m:w:o:v",
-				  long_options, &option_index)) != -1) {
+	while ((opt = getopt_long(argc, argv, "dhisfpI:t:b:x:z:m:w:o:v", long_options, NULL)) != -1) {
 		switch (opt) {
 		case 'x':
 			connect_str = optarg;
-			break;
-		case 'a':
-			local_addr = optarg;
-			break;
-
-		case 'l':
-			lport = optarg;
-			break;
-
-		case 'r':
-			tport = optarg;
-			break;
-
-		case 'c':
-			target_addr = optarg;
 			break;
 
 		case 'b':
@@ -378,23 +372,25 @@ static void parse_args(int argc, char *argv[])
 		}
 	}
 
-	if (tport == NULL)
-		exit(usage(1));
+	if (optind >= argc)
+		exit(usage(2));
 
-	if ((portdesc = getservbyname(tport, "tcp")) != NULL)
-		target_port = ntohs(portdesc->s_port);
-	else
-		target_port = atol(tport);
-    
-	/* only check local port if not running from inetd */
-	if (!inetd) {
-		if (lport == NULL)
-			exit(usage(1));
-	 
-		if ((portdesc = getservbyname(lport, "tcp")) != NULL) 
-			local_port = ntohs(portdesc->s_port);
-		else
-			local_port = atol(lport);
+	if (inetd) {
+		/* In inetd mode we redirect from src=stdin to dst:port */
+		target_port = parse_ipport(argv[optind], dst, sizeof(dst));
+		if (strlen(dst) > 1)
+			target_addr = strdup(dst);
+	} else {
+		/* We need at least [src]:port, if src is left out we listen to any */
+		local_port = parse_ipport(argv[optind++], src, sizeof(src));
+		if (-1 == local_port)
+			exit(usage(3));
+		if (strlen(src) > 1)
+			local_addr = strdup(src);
+
+		target_port = parse_ipport(argv[optind], dst, sizeof(dst));
+		if (strlen(dst) > 1)
+			target_addr = strdup(dst);
 	}
 
 	if (!ident) {
@@ -944,6 +940,7 @@ int main(int argc, char *argv[])
 
 	if (inetd) {
 		int targetsock;
+		char *target_ip;
 		struct sockaddr_in target;
 		struct sockaddr_in client, addr_out;
 		socklen_t client_size = sizeof(client);
@@ -1054,6 +1051,7 @@ int main(int argc, char *argv[])
 		 * contain the address of the client.
 		 */
 		while (1) {
+			char *target_ip;
 			struct sockaddr_in target;
 
 			memset(&target, 0, sizeof(target));
