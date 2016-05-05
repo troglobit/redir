@@ -8,6 +8,9 @@ Sam Creasey <sammy@oh.verio.com>
 	Original author, but this package would be vastly inferior without
 	Nigel's modifications.
 
+Damien Miller <damien@ibs.com.au>
+	Initial TCP wrappers support
+
 Thomas Osterried <thomas@x-berg.in-berlin.de>
 	Added the --bind-addr patch.
 
