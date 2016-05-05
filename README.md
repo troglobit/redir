@@ -12,13 +12,36 @@ a connection, then connects to a given destination address:port, and
 pass data between them.  It finds most of its applications in traversing
 firewalls, but, of course, there are other uses.
 
+Consult the man page for details.
 
-Usage
------
-
-Consult the man page, or call it with `redir -h` for usage help.
-
-    redir [-hidtnsIxbfpzmwov] [SRC]:PORT [DST]:PORT
+    Usage: redir [-hinspv] [-b IP]  [-f TYPE] [-I NAME] [-l LEVEL] [-t SEC]
+                           [-x STR] [-m BPS] [-o FLAG] [-w MSEC] [-z BYTES]
+                           [SRC]:PORT [DST]:PORT
+    
+    Options:
+      -b,--bind=IP            Force specific IP to bind() to when listening
+                              for incoming connections
+      -f,--ftp=TYPE           Redirect FTP connections.  Where type is
+                              one of: 'port', 'pasv', or 'both'
+      -h,--help               Show this help text
+      -i,--inetd              Run from inetd, SRC:PORT comes from stdin
+                              Usage: redir [OPTIONS] [DST]:PORT
+      -I,--ident=NAME         Identity, tag syslog messages with NAME
+      -l,--loglevel=LEVEL     Set log level: none, err, notice*, info, debug
+      -n,--foreground         Run in foreground, do not detach from terminal
+      -p,--transproxy         run in linux's transparent proxy mode
+      -s,--syslog             Log messages to syslog
+      -t,--timeout=SEC        Set timeout to SEC seconds, default off (0)
+      -v,--version            Show program version
+      -x,--connect=STR        CONNECT string passed to proxy server
+    
+    Traffic Shaping:
+      -m,--max-bandwidth=BPS  Limit the bandwidth to BPS bits/second
+      -o,--wait-in-out=FLAG   Wait for in(1), out(2), or in&out(3)
+      -w,--random-wait=MSEC   Wait MSEC milliseconds before each packet
+      -z,--bufsize=BYTES      Size of the traffic shaping buffer
+    
+    SRC and DST are optional, redir will revert to use 0.0.0.0 (ANY)
 
 
 Examples
