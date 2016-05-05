@@ -3,7 +3,7 @@ Change Log
 
 All relevant changes to the project are documented in this file.
 
-[v3.0][] - UNRELEASED
+[v3.0][] - 2016-05-06
 ---------------------
 
 This version changes the command line syntax!  You are going to have to
@@ -40,6 +40,7 @@ change how you call `redir` in order to upgrade.
 - Refactor to harmonize function and variable names
 - Cleanup `redir.c` heading and use proper GNU GPL blurb
 - Make sure to credit all known major contributors in `AUTHORS` file
+- Removed `redir.lsm` file
 
 ### Fixes
 - Fix socket leaks found by Coverity Scan
