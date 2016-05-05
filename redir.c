@@ -801,6 +801,7 @@ static int client_accept(int sd, struct sockaddr_in *target)
 	switch (fork()) {
      	case -1: /* Error */
 		syslog(LOG_ERR, "Server failed fork(): %s", strerror(errno));
+		close(client);
 		return 1;
 
      	case 0:  /* Child */
