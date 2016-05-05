@@ -1,64 +1,21 @@
-/* $Id$
+/* A TCP port redirector for UNIX
  *
- * redir	- a utility for redirecting tcp connections
+ * Copyright (c) 1996-1999  Sam Creasey <sammy@oh.verio.com>
+ * Copyright (c) 1996       Nigel Metheringham <Nigel.Metheringham@ThePLAnet.net>
+ * Copyright (c) 2016       Joachim Nilsson <troglobit@gmail.com>
  *
- * Author:	Nigel Metheringham
- *		Nigel.Metheringham@ThePLAnet.net
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * Based on, but much modified from, code originally written by
- * sammy@freenet.akron.oh.us - original header is below.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * redir is released under the GNU General Public license,
- * version 2, or at your discretion, any later version.
- *
- */
-
-/* 
- * redir is currently maintained by Sam Creasey (sammy@oh.verio.com).
- * Please send patches, etc. there.
- *
- */
-
-/* 980601: dl9sau
- * added some nice new features:
- *
- *   --bind_addr=my.other.ip.address
- *       forces to use my.other.ip.address for the outgoing connection
- *   
- *   you can also specify, that redir listens not on all IP addresses of
- *   your system but only for the given one, i.e.:
- *      if my host has the addresses
- *        irc.thishost.my.domain  and  mail.thishost.my.domain
- *      but you want that your users do connect for the irc redir service
- *      only on irc.thishost.my.domain, then do it this way:
- *        redir irc.fu-berlin.de irc.thishost.mydomain:6667 6667
- *   my need was that:
- *        addr1.first.domain  6667 redirects to irc.first.net  port 6667
- *   and  addr2.second.domain 6667 redirects to irc.second.net port 6667
- *   while addr1 and addr2 are the same maschine and the ports can be equal.
- *
- *  enjoy it!
- *    - thomas  <thomas@x-berg.in-berlin.de>, <dl9sau@db0tud.ampr.org>
- *
- *  btw: i tried without success implementing code for the following scenario:
- *    redir --force_addr irc.fu-berlin.de 6667 6667
- *  if "--force_addr" is given and a user connects to my system, that address
- *  of my system will be used on the outgoing connection that the user
- *  connected to.
- *  i was not successful to determine, to which of my addresses the user
- *  has connected.
- */
- 
-/* 990320 added support for ftp connection done by the client, now this code 
- *        should work for all ftp clients.
- *	  
- *   - harald <harald.holzer@eunet.at>
- */
- 
-/* 991221 added options to simulate a slow connection and to limit
- *	  bandwidth.
- *
- *   - Emmanuel Chantréau <echant@maretmanu.org>
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see <http://www.gnu.org/licenses/>
  */
 
 #include "config.h"
