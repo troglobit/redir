@@ -1,3 +1,25 @@
+TODO
+====
+
+Unordered list of TODO items.
+
+
+Testing
+-------
+
+We should add an automated test framework to be run automatically with
+Travis-CI.  At least some simple netcat non-privileged port test should
+be possible.
+
+Test transparent proxy support, since v2.3 that feature has not been
+looked at even once.
+
+	    -- Joachim Nilsson <troglobit@gmail.com>
+
+
+Non-forking server
+------------------
+
 I'm thinking of eventually doing a version which never forks, but does
 one big-honking-select-loop, which probably wouldn't be much of a
 bother, and would save a good chunk of ram, but then an FD limit becomes
