@@ -711,7 +711,7 @@ static int target_connect(int client, struct sockaddr_in *target)
 	memset(&addr_out, 0, sizeof(addr_out));
 
 #ifdef USE_TCP_WRAPPERS
-	if (verify_request(sd))
+	if (verify_request(client))
 		return -1;
 #endif /* USE_TCP_WRAPPERS */
 
