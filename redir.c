@@ -69,6 +69,7 @@
 #include <string.h>
 #include <signal.h>
 #include <getopt.h>
+#define SYSLOG_NAMES
 #include <syslog.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -90,12 +91,10 @@
 #define REDIR_IN  1
 #define REDIR_OUT 0
 
-#define debug(fmt, args...)	if (do_debug) syslog(LOG_DEBUG, fmt, ##args)
-
 int inetd      = 0;
 int background = 1;
 int timeout    = 0;
-int do_debug   = 0;
+int loglevel   = LOG_NOTICE;
 int do_syslog  = 0;
 int transproxy = 0;
 
@@ -143,7 +142,7 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 		FD_ZERO(&empty);
 
 		rand_time = rand() % (random_wait * 2);
-		debug("random wait: %u", rand_time);
+		syslog(LOG_DEBUG, "random wait: %u", rand_time);
 		waitbw.tv_sec  = rand_time / 1000;
 		waitbw.tv_usec = rand_time % 1000;
 
@@ -161,7 +160,7 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 
 		/* wait to be sure tu be below the allowed bandwidth */
 		bits = size * 8;
-		debug("bandwidth wait: %lu", 1000 * bits / max_bandwidth);
+		syslog(LOG_DEBUG, "bandwidth wait: %lu", 1000 * bits / max_bandwidth);
 		waitbw.tv_sec  = bits / max_bandwidth;
 		waitbw.tv_usec = (1000 * (bits % max_bandwidth)) / max_bandwidth;
 
@@ -180,13 +179,14 @@ static int usage(int code)
 	extern char *__progname;
 
 	fprintf(stderr,"\n"
-		"Usage: %s [-hidtnsIxbfpzmwov] [SRC]:PORT [DST]:PORT\n", __progname);
+		"Usage: %s [-hinspv] [-b IP]  [-f TYPE] [-I NAME] [-l LEVEL] [-t SEC]\n"
+		"                       [-x STR] [-m BPS] [-o FLAG] [-w MSEC] [-z BYTES]\n"
+		"                       [SRC]:PORT [DST]:PORT\n", __progname);
 	fprintf(stderr, "\n"
 		"Options:\n"
 		"  -b,--bind=IP            Force specific IP to bind() to when listening\n"
 		"                          for incoming connections\n"
 		"  -h,--help               Show this help text\n"
-		"  -d,--debug              Enable debugging info\n"
 #ifndef NO_FTP
 		"  -f,--ftp=TYPE           Redirect FTP connections.  Where type is\n"
 		"                          one of: 'port', 'pasv', or 'both'\n"
@@ -220,6 +220,18 @@ static int usage(int code)
 	return code;
 }
 
+static int loglvl(char *level)
+{
+	int i;
+
+	for (i = 0; prioritynames[i].c_name; i++) {
+		if (!strcmp(prioritynames[i].c_name, level))
+			return prioritynames[i].c_val;
+	}
+
+	return atoi(level);
+}
+
 static int parse_ipport(char *arg, char *buf, size_t len)
 {
 	int port;
@@ -251,10 +263,10 @@ static void parse_args(int argc, char *argv[])
 		{"help",          no_argument,       0, 'h'},
 		{"bind_addr",     required_argument, 0, 'b'},
 		{"bind",          required_argument, 0, 'b'},
-		{"debug",         no_argument,       0, 'd'},
 		{"timeout",       required_argument, 0, 't'},
 		{"inetd",         no_argument,       0, 'i'},
 		{"ident",         required_argument, 0, 'I'},
+		{"loglevel",      required_argument, 0, 'l'},
 		{"name",          required_argument, 0, 'I'},
 		{"syslog",        no_argument,       0, 's'},
 		{"connect",       required_argument, 0, 'x'},
@@ -290,14 +302,10 @@ static void parse_args(int argc, char *argv[])
 #else
 #define SHAPER_OPTS ""
 #endif
-	while ((opt = getopt_long(argc, argv, "b:dhiI:npst:vx:" FTP_OPTS SHAPER_OPTS, long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "b:hiI:l:npst:vx:" FTP_OPTS SHAPER_OPTS, long_options, NULL)) != -1) {
 		switch (opt) {
 		case 'b':
 			bind_addr = optarg;
-			break;
-
-		case 'd':
-			do_debug++;
 			break;
 
 #ifndef NO_FTP
@@ -318,6 +326,12 @@ static void parse_args(int argc, char *argv[])
 		case 'I':
 			/* This is the ident which is added to syslog messages */
 			ident = optarg;
+			break;
+
+		case 'l':
+			loglevel = loglvl(optarg);
+			if (-1 == loglevel)
+				exit(usage(1));
 			break;
 
 		case 'n':
@@ -505,10 +519,10 @@ void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
 	newsession.sin_addr.s_addr = remip[0] | (remip[1] << 8)
 		| (remip[2] << 16) | (remip[3] << 24);
 
-	debug("ftpdata server ip: %s", inet_ntoa(newsession.sin_addr));
-	debug("ftpdata server port: %d", rport);
-	debug("listening for ftpdata on port %d", lport);
-	debug("listening for ftpdata on addr %s", inet_ntoa(sockname.sin_addr));
+	syslog(LOG_DEBUG, "ftpdata server ip: %s", inet_ntoa(newsession.sin_addr));
+	syslog(LOG_DEBUG, "ftpdata server port: %d", rport);
+	syslog(LOG_DEBUG, "listening for ftpdata on port %d", lport);
+	syslog(LOG_DEBUG, "listening for ftpdata on addr %s", inet_ntoa(sockname.sin_addr));
 
 
 	/* now that we're bound and listening, we can safely send the new
@@ -565,7 +579,7 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 		goto no_mem;
 	}
 
-	debug("Entering copyloop() - timeout is %d", timeout_secs);
+	syslog(LOG_DEBUG, "Entering copyloop() - timeout is %d", timeout_secs);
 	while (1) {
 		fd_set iofds;
 
@@ -687,7 +701,7 @@ static int target_init(char *addr, int port, struct sockaddr_in *target)
 	if (addr) {
 		struct hostent *hp;
 
-		debug("target is %s", addr);
+		syslog(LOG_DEBUG, "target is %s", addr);
 		hp = gethostbyname(addr);
 		if (!hp) {
 			syslog(LOG_ERR, "Unknown host %s", addr);
@@ -695,7 +709,7 @@ static int target_init(char *addr, int port, struct sockaddr_in *target)
 		}
 		memcpy(&target->sin_addr, hp->h_addr, hp->h_length);
 	} else {
-		debug("target is default");
+		syslog(LOG_DEBUG, "target is default");
 		target->sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 	}
 
@@ -717,12 +731,12 @@ static int target_connect(int client, struct sockaddr_in *target)
 #endif /* USE_TCP_WRAPPERS */
 
 	if (!getpeername(client, (struct sockaddr *)&peer, &peerlen)) {
-		debug("peer IP is %s", inet_ntoa(peer.sin_addr));
-		debug("peer socket is %d", ntohs(peer.sin_port));
+		syslog(LOG_DEBUG, "peer IP is %s", inet_ntoa(peer.sin_addr));
+		syslog(LOG_DEBUG, "peer socket is %d", ntohs(peer.sin_port));
 	}
 
-	debug("target IP address is %s", inet_ntoa(target->sin_addr));
-	debug("target port is %d", ntohs(target->sin_port));
+	syslog(LOG_DEBUG, "target IP address is %s", inet_ntoa(target->sin_addr));
+	syslog(LOG_DEBUG, "target port is %d", ntohs(target->sin_port));
 
 	if (transproxy) {
 		memcpy(&addr_out, &peer, sizeof(struct sockaddr_in));
@@ -742,7 +756,7 @@ static int target_connect(int client, struct sockaddr_in *target)
 		}
 		memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
 
-		debug("IP address for target is %s", inet_ntoa(addr_out.sin_addr));
+		syslog(LOG_DEBUG, "IP address for target is %s", inet_ntoa(addr_out.sin_addr));
 	}
 
 	sd = socket(AF_INET, SOCK_STREAM, 0);
@@ -775,7 +789,7 @@ static int client_accept(int sd, struct sockaddr_in *target)
 {
 	int client, status;
 
-	debug("Waiting for client to connect on server socket ...");
+	syslog(LOG_DEBUG, "Waiting for client to connect on server socket ...");
 	client = accept(sd, NULL, NULL);
 	if (client < 0) {
 		syslog(LOG_ERR, "Failed calling accept(): %s", strerror(errno));
@@ -886,7 +900,7 @@ static int server_socket(char *addr, int port, int fail)
 	if (addr != NULL) {
 		struct hostent *hp;
 	  
-		debug("listening on %s", addr);
+		syslog(LOG_DEBUG, "listening on %s", addr);
 		if ((hp = gethostbyname(addr)) == NULL) {
 			if (fail) {
 				close(sd);
@@ -898,7 +912,7 @@ static int server_socket(char *addr, int port, int fail)
 		}
 		memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
 	} else {
-		debug("local IP is default");
+		syslog(LOG_DEBUG, "local IP is default");
 		server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 	}
      
@@ -964,6 +978,7 @@ int main(int argc, char *argv[])
 		log_opts |= LOG_PERROR;
 #endif
 	openlog(ident, log_opts, LOG_DAEMON);
+	setlogmask(LOG_UPTO(loglevel));
 
 	if (inetd) {
 		int sd;
