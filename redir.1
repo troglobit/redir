@@ -6,11 +6,11 @@
 .Nd redirect TCP connections
 .Sh SYNOPSIS
 .Nm
-.Op Fl -debug
 .Op Fl -foreground
 .Op Fl -syslog
 .Op Fl -ident=NAME
 .Op Fl -inetd
+.Op Fl -loglevel=LEVEL
 .Op Fl -timeout=SEC
 .Op Fl -bind=IP
 .Op Fl -ftp=TYPE
@@ -65,11 +65,11 @@ Depending on how redir was compiled, not all options may be available.
 Run as a process started from
 .Xr inetd 1 ,
 with the connection passed as stdin and stdout on startup.
-.It Fl d, Fl -debug
-Write debug output to stderr or syslog.
 .It Fl I, Fl -ident=STR
 Specify program identity (name) to be used for TCP wrapper checks and
 syslog logging.
+.It Fl l, Fl -loglevel=LEVEL
+Set log level: none, err, notice, info, debug.  Default it notice.
 .It Fl t, Fl -timeout=SEC
 Timeout and close the connection after SEC seconds of inactivity.
 .It Fl n, Fl -foreground
