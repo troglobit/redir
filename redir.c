@@ -194,15 +194,16 @@ static int usage(int code)
 		"  -i,--inetd              Run from inetd, SRC:PORT comes from stdin\n"
 		"                          Usage: %s [OPTIONS] [DST]:PORT\n"
 		"  -I,--ident=NAME         Identity, tag syslog messages with NAME\n"
+#ifdef USE_TCP_WRAPPERS
+		"                          Also used as service name for TCP wrappers\n"
+#endif
+		"  -l,--loglevel=LEVEL     Set log level: none, err, notice*, info, debug\n"
 		"  -n,--foreground         Run in foreground, do not detach from terminal\n"
 		"  -p,--transproxy         run in linux's transparent proxy mode\n"
 		"  -s,--syslog             Log messages to syslog\n"
 		"  -t,--timeout=SEC        Set timeout to SEC seconds, default off (0)\n"
 		"  -v,--version            Show program version\n"
 		"  -x,--connect=STR        CONNECT string passed to proxy server\n"
-#ifdef USE_TCP_WRAPPERS
-		"                          Also used as service name for TCP wrappers\n"
-#endif
 #ifndef NO_SHAPER
 		"\n"
 		"Traffic Shaping:\n"
