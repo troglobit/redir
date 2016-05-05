@@ -6,7 +6,7 @@ All relevant changes to the project are documented in this file.
 [v3.0][] - UNRELEASED
 ---------------------
 
-This version changes the command line syntax!  You're going to have to
+This version changes the command line syntax!  You are going to have to
 change how you call `redir` in order to upgrade.
 
 ### Changes
@@ -50,7 +50,7 @@ change how you call `redir` in order to upgrade.
 - Check `malloc()` return value
 - Do `gethostbyname()` before every `connect()`, DNS names may change at
   runtime
-- 
+
 
 [v2.3][] - 2016-05-01
 ---------------------
@@ -152,8 +152,8 @@ lot less brain damaged.
   still improvements to be made here, but, alas.
 
 
-[v1.2][] - UNKNOWN
-------------------
+v1.2 - UNKNOWN
+---------------
 
 Like v0.5, this release was not possible to locate on the Internet
 anymore.  Even using excellent help from <http://www.archive.org>.
