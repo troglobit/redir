@@ -6,20 +6,17 @@
 .Nd redirect TCP connections
 .Sh SYNOPSIS
 .Nm
-.Op Fl n
-.Op Fl s
-.Op Fl I Ar NAME
-.Op Fl i
-.Op Fl l Ar LEVEL
-.Op Fl t Ar SEC
+.Op Fl hinpsv
 .Op Fl b Ar IP
 .Op Fl f Ar TYPE
-.Op Fl p
+.Op Fl I Ar NAME
+.Op Fl l Ar LEVEL
+.Op Fl m Ar BPS
+.Op Fl o Ar <1,2,3>
+.Op Fl t Ar SEC
+.Op Fl w Ar MSEC
 .Op Fl x Ar HOST:PORT
 .Op Fl z Ar BYTES
-.Op Fl m Ar BPS
-.Op Fl w Ar MSEC
-.Op Fl o Ar <1,2,3>
 .Ar [SRC]:PORT
 .Ar [DST]:PORT
 .Sh DESCRIPTION
@@ -62,26 +59,13 @@ Depending on how redir was compiled, not all options may be available.
 .Sh OPTIONS
 Mandatory arguments to long options are mandatory for short options too.
 .Bl -tag -width Ds
-.It Fl i, Fl -inetd
-Run as a process started from
-.Xr inetd 1 ,
-with the connection passed as stdin and stdout on startup.
-.It Fl I, Fl -ident=STR
-Specify program identity (name) to be used for TCP wrapper checks and
-syslog logging.
-.It Fl l, Fl -loglevel=LEVEL
-Set log level: none, err, notice, info, debug.  Default it notice.
-.It Fl t, Fl -timeout=SEC
-Timeout and close the connection after SEC seconds of inactivity.
-.It Fl n, Fl -foreground
-Run in foreground, do not detach from controlling terminal.
-.It Fl s, Fl -syslog
-Log messages to syslog.
 .It Fl b, Fl -bind=IP
 Forces
 .Nm
 to pick a specific address/interface to bind to when it listens for
 incoming connections.
+.It Fl h, -help
+Show built-in help text.
 .It Fl f, -ftp=TYPE
 When using
 .Nm
@@ -90,11 +74,28 @@ connections.  Type should be specified as either "port", "pasv", or
 "both", to specify what type of FTP connection to handle.  Note that
 .Fl -transproxy
 often makes one or the other (generally port) undesirable.
+.It Fl i, Fl -inetd
+Run as a process started from
+.Xr inetd 1 ,
+with the connection passed as stdin and stdout on startup.
+.It Fl I, Fl -ident=STR
+Specify program identity (name) to be used for TCP wrapper checks and
+syslog messages.
+.It Fl l, Fl -loglevel=LEVEL
+Set log level: none, err, notice, info, debug.  Default is notice.
+.It Fl n, Fl -foreground
+Run in foreground, do not detach from controlling terminal.
 .It Fl p, Fl -transproxy
 On a linux system with transparent proxying enabled, causes
 .Nm
 to make connections appear as if they had come from their true origin.
 See the file transproxy.txt in the distribution for details.
+.It Fl s, Fl -syslog
+Log messages to syslog.
+.It Fl t, Fl -timeout=SEC
+Timeout and close the connection after SEC seconds of inactivity.
+.It Fl v
+Show program version.
 .It Fl x, Fl -connect
 Redirects connections through an HTTP proxy which supports the CONNECT
 command.  Specify the address and port of the proxy using
@@ -102,27 +103,33 @@ command.  Specify the address and port of the proxy using
 .Fl -connect
 requires the hostname and port which the HTTP proxy will be asked to
 connect to.
-.It Fl z, Fl -bufsize=BYTES
-Set the bufsize (defaut 4096) in bytes.  Can be used combined with
-.Fl -max-bandwidth
-or
-.Fl -random-wait
-to simulate a slow connection.
-.It Fl w, Fl -max-bandwidth=BPS
+.El
+.Sh TRAFFIC SHAPING
+The following options control traffic shaping, if
+.Nm
+is built with shaping enabled.
+.Bl -tag -width Ds
+.It Fl m, Fl -max-bandwidth=BPS
 Reduce the bandwidth to be no more than BPS bits/sec.  The algorithm is
 basic, the goal is to simulate a slow connection, so there is no peak
 acceptance.
-.It Fl w, Fl -random-wait=MSEC
-Wait between 0 and 2 x n milliseconds before each "packet".  A "packet"
-is a block of data read in one time by redir.  A "packet" size is always
-less than the bufsize (see also
-.Fl -bufsize )
 .It Fl o, Fl -wait-in-out=<1,2,3>
 Apply
 .Fl -max-bandwidth
 and
 .Fl -random-wait
 for input(1), output(2), or both(3).
+.It Fl w, Fl -random-wait=MSEC
+Wait between 0 and 2 x n milliseconds before each "packet".  A "packet"
+is a block of data read in one time by redir.  A "packet" size is always
+less than the bufsize (see also
+.Fl -bufsize )
+.It Fl z, Fl -bufsize=BYTES
+Set the bufsize (defaut 4096) in bytes.  Can be used combined with
+.Fl -max-bandwidth
+or
+.Fl -random-wait
+to simulate a slow connection.
 .El
 .Sh SEE ALSO
 .Xr inetd 1
