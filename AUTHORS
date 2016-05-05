@@ -11,5 +11,11 @@ Sam Creasey <sammy@oh.verio.com>
 Thomas Osterried <thomas@x-berg.in-berlin.de>
 	Added the --bind-addr patch.
 
+Harald Holzer <harald.holzer@eunet.at>
+	Added support for FTP connection done by the client
+
+Emmanuel Chantréau <echant@maretmanu.org>
+	Added options to simulate a slow connection and to limit bandwidth
+
 Joachim Nilsson <troglobit@gmail.com>
 	Current maintainer at https://github.com/troglobit/redir
