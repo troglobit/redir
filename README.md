@@ -68,6 +68,16 @@ An `/etc/inetd.conf` line of the same looks very similar:
 
     http  stream  tcp  nowait  root  /usr/sbin/tcpd /usr/bin/redir -n -s -i 127.0.0.1:8080
 
+When running multiple redir instances it can be useful to change how
+they identify themselves:
+
+    redir -I nntp www:119 netgate:119
+    redir -I pop3 ftp:110 netgate:110
+
+This starts an NNTP and a POP3 port redirector, named accordingly.
+Previously therere was a `redir-wrapper` script included in the
+distribution, but that is no longer maintained.
+
 
 Building
 --------
