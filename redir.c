@@ -753,12 +753,14 @@ static int target_connect(int client, struct sockaddr_in *target)
 	if (bind_addr || transproxy) {
 		if (bind(sd, (struct sockaddr *)&addr_out, sizeof(addr_out)) < 0) {
 			syslog(LOG_ERR, "Failed binding to outbound address: %s", strerror(errno));
+			close(sd);
 			return -1;
 		}
 	}
 
 	if (connect(sd, (struct sockaddr *)target, sizeof(*target)) < 0) {
 		syslog(LOG_ERR, "Failed connecting to target %s: %s", inet_ntoa(target->sin_addr), strerror(errno));
+		close(sd);
 		return -1;
 	}
 
