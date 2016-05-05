@@ -6,20 +6,20 @@
 .Nd redirect TCP connections
 .Sh SYNOPSIS
 .Nm
-.Op Fl -foreground
-.Op Fl -syslog
-.Op Fl -ident=NAME
-.Op Fl -inetd
-.Op Fl -loglevel=LEVEL
-.Op Fl -timeout=SEC
-.Op Fl -bind=IP
-.Op Fl -ftp=TYPE
-.Op Fl -transproxy
-.Op Fl -connect=HOST:PORT
-.Op Fl -bufsize=BYTES
-.Op Fl -max-bandwidth=BPS
-.Op Fl -random-wait=MSEC
-.Op Fl -wait-in-out=<1,2,3>
+.Op Fl n
+.Op Fl s
+.Op Fl I Ar NAME
+.Op Fl i
+.Op Fl l Ar LEVEL
+.Op Fl t Ar SEC
+.Op Fl b Ar IP
+.Op Fl f Ar TYPE
+.Op Fl p
+.Op Fl x Ar HOST:PORT
+.Op Fl z Ar BYTES
+.Op Fl m Ar BPS
+.Op Fl w Ar MSEC
+.Op Fl o Ar <1,2,3>
 .Ar [SRC]:PORT
 .Ar [DST]:PORT
 .Sh DESCRIPTION
@@ -60,6 +60,7 @@ flag is given.
 .Pp
 Depending on how redir was compiled, not all options may be available.
 .Sh OPTIONS
+Mandatory arguments to long options are mandatory for short options too.
 .Bl -tag -width Ds
 .It Fl i, Fl -inetd
 Run as a process started from
