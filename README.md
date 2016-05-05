@@ -56,14 +56,14 @@ This starts `redir` as a standard UNIX daemon in the background, with
 all log messages sent to the syslog.  Use `-n` to foreground and see log
 messages on `stderr`.
 
-To run `redir` from a process monitor like Finit or systemd, tell it to
-not background itself and to only use the syslog for log messages:
+To run `redir` from a process monitor like [Finit][] or systemd, tell it
+to not background itself and to only use the syslog for log messages:
 
     redir -n -s :80 127.0.0.1:8080
 
-An `/etc/inetd.conf` line of the same may look like this:
+An `/etc/inetd.conf` line of the same looks very similar:
 
-    http  stream  tcp  nowait  root  /usr/sbin/tcpd /usr/bin/redir -i 127.0.0.1:8080
+    http  stream  tcp  nowait  root  /usr/sbin/tcpd /usr/bin/redir -n -s -i 127.0.0.1:8080
 
 
 Building
@@ -91,6 +91,7 @@ Redir is distributed under the terms of the GNU Public Licence, version
 [Sam Creasey]:     http://sammy.net/~sammy/hacks/
 [Joachim Nilsson]: http://troglobit.com
 [GitHub]:          https://github.com/troglobit/redir
+[Finit]:           https://github.com/troglobit/finit
 [Travis]:          https://travis-ci.org/troglobit/redir
 [Travis Status]:   https://travis-ci.org/troglobit/redir.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/8740
