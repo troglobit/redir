@@ -2,25 +2,41 @@ A TCP port redirector for UNIX
 ==============================
 [![Travis Status][]][Travis] [![Coverity Status]][Coverity Scan]
 
-[Redir][home] is a port redirector for UNIX.  It can run under inetd or
-standalone (in which case it handles multiple connections).  It is 8 bit
-clean, not limited to line mode, is small and light.  If you want access
-control run it under xinetd, or inetd with TCP wrappers.
+[Redir][home] is a TCP port redirector for UNIX.  It can run under inetd
+or standalone (in which case it handles multiple connections).  It is 8
+bit clean, not limited to line mode, is small and lightweight.  If you
+want access control, run it under xinetd, or inetd with TCP wrappers.
 
 Redir listens for TCP connections on a given port, and, when it recieves
-a connection, then connects to a given destination address/port, and
+a connection, then connects to a given destination address:port, and
 pass data between them.  It finds most of its applications in traversing
 firewalls, but, of course, there are other uses.  Consult the man page,
-or run with no options for usage information.
+or call it with `redir -h` for usage help.
 
-    Usage:
-            redir --lport=PORT --cport=PORT [options]
-            redir --inetd      --cport=PORT
+    Usage: redir [-hidtnsIxbfpzmwov] [SRC]:PORT [DST]:PORT
+
+To redirect port 80 to a webserver listening on loopback port 8080,
+remember to use `sudo` when using priviliged ports:
+
+    sudo redir :80 127.0.0.1:8080
+
+This starts `redir` as a standard UNIX daemon in the background, with
+all log messages sent to the syslog.  Use `-n` to foreground and see log
+messages on `stderr`.
+
+To run `redir` from a process monitor like Finit or systemd, tell it to
+not background itself and to only use the syslog for log messages:
+
+    redir -n -s :80 127.0.0.1:8080
+
+An `/etc/inetd.conf` line of the same may look like this:
+
+    http  stream  tcp  nowait  root  /usr/sbin/tcpd /usr/bin/redir -i 127.0.0.1:8080
 
 Redir comes with a GNU configure script which you can use to adapt the
 build to your needs.  If you would like to remove support for some
-extended options (for the sake of speed, code size, whatever),
-try the following options to configure:
+extended options (for the sake of speed, code size, whatever), try the
+following options to configure:
 
     --disable-shaper   Disable traffic shaping code
     --disable-ftp      Disable FTP redirection support
