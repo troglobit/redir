@@ -704,7 +704,6 @@ static int target_init(char *addr, int port, struct sockaddr_in *target)
 static int target_connect(int client, struct sockaddr_in *target)
 {
 	int sd;
-	char *target_ip;
 	struct sockaddr_in peer, addr_out;
 	socklen_t peerlen = sizeof(peer);
 
@@ -721,8 +720,7 @@ static int target_connect(int client, struct sockaddr_in *target)
 		debug("peer socket is %d", ntohs(peer.sin_port));
 	}
 
-	target_ip = strdup(inet_ntoa(target->sin_addr));
-	debug("target IP address is %s", target_ip);
+	debug("target IP address is %s", inet_ntoa(target->sin_addr));
 	debug("target port is %d", ntohs(target->sin_port));
 
 	if (transproxy) {
@@ -760,12 +758,12 @@ static int target_connect(int client, struct sockaddr_in *target)
 	}
 
 	if (connect(sd, (struct sockaddr *)target, sizeof(*target)) < 0) {
-		syslog(LOG_ERR, "Failed connecting to target %s: %s", target_ip, strerror(errno));
+		syslog(LOG_ERR, "Failed connecting to target %s: %s", inet_ntoa(target->sin_addr), strerror(errno));
 		return -1;
 	}
 
-	syslog(LOG_INFO, "Connecting %s:%d to %s:%d", inet_ntoa(peer.sin_addr),
-	       ntohs(peer.sin_port), target_ip, ntohs(target->sin_port));
+	syslog(LOG_INFO, "Connecting %s:%d to %s:%d", inet_ntoa(peer.sin_addr), ntohs(peer.sin_port),
+	       inet_ntoa(target->sin_addr), ntohs(target->sin_port));
 
 	return sd;
 }
