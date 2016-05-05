@@ -86,10 +86,12 @@ Set log level: none, err, notice, info, debug.  Default is notice.
 .It Fl n, Fl -foreground
 Run in foreground, do not detach from controlling terminal.
 .It Fl p, Fl -transproxy
-On a linux system with transparent proxying enabled, causes
+On a Linux system with transparent proxying enabled, causes
 .Nm
 to make connections appear as if they had come from their true origin.
-See the file transproxy.txt in the distribution for details.
+See the file transproxy.txt in the distribution, and the Linux
+Documentation/networking/tproxy.txt for details.  Untested on modern
+Linux kernels.
 .It Fl s, Fl -syslog
 Log messages to syslog.
 .It Fl t, Fl -timeout=SEC
