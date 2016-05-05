@@ -84,6 +84,12 @@
 #include <tcpd.h>
 #endif
 
+#define FTP_PORT 1
+#define FTP_PASV 2
+
+#define REDIR_IN  1
+#define REDIR_OUT 0
+
 #define debug(fmt, args...)	if (do_debug) syslog(LOG_DEBUG, fmt, ##args)
 
 int inetd      = 0;
@@ -91,6 +97,7 @@ int background = 1;
 int timeout    = 0;
 int do_debug   = 0;
 int do_syslog  = 0;
+int transproxy = 0;
 
 char *target_addr = NULL;
 int   target_port = 0;
@@ -102,8 +109,6 @@ char *bind_addr   = NULL;
 int ftp = 0;
 #endif
 
-int transproxy = 0;
-
 #ifndef NO_SHAPER
 int max_bandwidth = 0;
 int random_wait   = 0;
@@ -112,22 +117,13 @@ int wait_in       = 1;
 int wait_out      = 1;
 #endif
 
-unsigned int bufsize = BUFSIZ;
+size_t bufsize    = BUFSIZ;
 char *connect_str = NULL;	/* CONNECT string passed to proxy */
 char *ident       = NULL;
 
-#ifndef NO_FTP
-/* what ftp to redirect */
-#define FTP_PORT 1
-#define FTP_PASV 2
-#endif
-
-#define REDIR_IN  1
-#define REDIR_OUT 0
-
 /* prototype anything needing it */
-static void do_accept(int servsock, struct sockaddr_in *target);
-static int bindsock(char *addr, int port, int fail);
+static int client_accept(int sd, struct sockaddr_in *target);
+static int server_socket(char *addr, int port, int fail);
 
 #ifndef NO_SHAPER
 /* Used in this program to write something in a socket, it has the same
@@ -201,7 +197,7 @@ static int usage(int code)
 		"  -n,--foreground         Run in foreground, do not detach from terminal\n"
 		"  -p,--transproxy         run in linux's transparent proxy mode\n"
 		"  -s,--syslog             Log messages to syslog\n"
-		"  -t,--timeout=SEC        Set timeout to SEC seconds\n"
+		"  -t,--timeout=SEC        Set timeout to SEC seconds, default off (0)\n"
 		"  -v,--version            Show program version\n"
 		"  -x,--connect=STR        CONNECT string passed to proxy server\n"
 #ifdef USE_TCP_WRAPPERS
@@ -358,7 +354,7 @@ static void parse_args(int argc, char *argv[])
                 case 'z':
 			bufsize = (unsigned int)atol(optarg);
 			if (bufsize < 256) {
-				syslog(LOG_ERR, "Too small buffer (%d), must be at least 256 bytes!", bufsize);
+				syslog(LOG_ERR, "Too small buffer (%zd), must be at least 256 bytes!", bufsize);
 				exit(usage(1));
 			}
 			break;
@@ -425,16 +421,15 @@ static void parse_args(int argc, char *argv[])
    now it also change the PORT commando when the client accept the
    dataconnection */
    
-void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
+void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
 {
 	char *port_start;
 	int rporthi, lporthi;
 	int lportlo, rportlo;
 	int lport, rport;
 	int remip[4];
-	int localsock;
+	int sd;
 	socklen_t socksize = sizeof(struct sockaddr_in);
-
 	struct sockaddr_in newsession;
 	struct sockaddr_in sockname;
 
@@ -473,14 +468,14 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 
 	/* we need to listen on a port for the incoming connection.
 	   we will use the port 0, so let the system pick one. */
-	localsock = bindsock(inet_ntoa(sockname.sin_addr), 0, 1);
-	if (localsock == -1) {
-		syslog(LOG_ERR, "Failed bindsock(): %s", strerror(errno));
+	sd = server_socket(inet_ntoa(sockname.sin_addr), 0, 1);
+	if (sd == -1) {
+		syslog(LOG_ERR, "Failed creating server socket: %s", strerror(errno));
 		exit(1);
 	}
 	
 	/* get the real info */
-	if (getsockname(localsock, (struct sockaddr *)&sockname, &socksize) < 0) {
+	if (getsockname(sd, (struct sockaddr *)&sockname, &socksize) < 0) {
 		syslog(LOG_ERR, "Failed getsockname(): %s", strerror(errno));
 		exit(1);
 	}
@@ -533,12 +528,12 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 	case 0:  /* Child */
 		/* turn off ftp checking while the data connection is active */
 		ftp = 0;
-		do_accept(localsock, &newsession);
-		close(localsock);
+		client_accept(sd, &newsession);
+		close(sd);
      		_exit(0);
 
      	default: /* Parent */
-		close(localsock);
+		close(sd);
 		break;
 	}
 }
@@ -547,24 +542,17 @@ void ftp_clean(int send, char *buf, unsigned long *bytes, int ftpsrv)
 
 static void copyloop(int insock, int outsock, int timeout_secs)
 {
-	fd_set iofds;
-	fd_set c_iofds;
 	int max_fd;			/* Maximum numbered fd used */
 	struct timeval timeout;
-	unsigned long bytes;
-	unsigned long bytes_in = 0;
-	unsigned long bytes_out = 0;
+	ssize_t bytes;
+	ssize_t bytes_in = 0;
+	ssize_t bytes_out = 0;
 	unsigned int start_time, end_time;
 	char *buf;
 
 	/* Record start time */
 	start_time = (unsigned int)time(NULL);
 
-	/* file descriptor bits */
-	FD_ZERO(&iofds);
-	FD_SET(insock, &iofds);
-	FD_SET(outsock, &iofds);
-    
 	if (insock > outsock)
 		max_fd = insock;
 	else
@@ -578,20 +566,23 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 
 	debug("Entering copyloop() - timeout is %d", timeout_secs);
 	while (1) {
-		(void) memcpy(&c_iofds, &iofds, sizeof(iofds));
+		fd_set iofds;
+
+		FD_ZERO(&iofds);
+		FD_SET(insock, &iofds);
+		FD_SET(outsock, &iofds);
 
 		/* Set up timeout, Linux returns seconds left in this structure
 		 * so we have to reset it before each select(). */
 		timeout.tv_sec = timeout_secs;
 		timeout.tv_usec = 0;
 
-
-		if (select(max_fd + 1, &c_iofds, NULL, NULL, (timeout_secs ? &timeout : NULL)) <= 0) {
-			syslog(LOG_NOTICE, "Connection timeout: %d sec", timeout_secs);
+		if (select(max_fd + 1, &iofds, NULL, NULL, (timeout_secs ? &timeout : NULL)) <= 0) {
+			syslog(LOG_DEBUG, "Connection timeout: %d sec", timeout_secs);
 			break;
 		}
 
-		if (FD_ISSET(insock, &c_iofds)) {
+		if (FD_ISSET(insock, &iofds)) {
 			bytes = read(insock, buf, bufsize);
 			if (bytes <= 0)
 				break;
@@ -604,14 +595,15 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 				/* if we're correcting FTP, lookup for a PORT commando
 				   in the buffer, if yes change this and establish 
 				   a new redirector for the data */
-				ftp_clean(outsock, buf, &bytes,0); 
+				ftp_clean(outsock, buf, &bytes, 0);
 			else
 #endif
 				if (redir_write(outsock, buf, bytes, REDIR_OUT) != bytes)
 					break;
 			bytes_out += bytes;
 		}
-		if (FD_ISSET(outsock, &c_iofds)) {
+
+		if (FD_ISSET(outsock, &iofds)) {
 			bytes = read(outsock, buf, bufsize);
 			if (bytes <= 0)
 				break;
@@ -632,25 +624,14 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 			bytes_in += bytes;
 		}
 	}
-	debug("Leaving main copyloop");
 	free(buf);
 no_mem:
-/*
-  setsockopt(insock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
-  setsockopt(insock, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(SO_LINGER)); 
-  setsockopt(outsock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
-  setsockopt(outsock, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(SO_LINGER)); 
-*/
-	shutdown(insock,0);
-	shutdown(outsock,0);
+	shutdown(insock, SHUT_RDWR);
+	shutdown(outsock, SHUT_RDWR);
 	close(insock);
 	close(outsock);
-	debug("copyloop - sockets shutdown and closed");
-	end_time = (unsigned int) time(NULL);
-	debug("copyloop - connect time: %8d seconds", end_time - start_time);
-	debug("copyloop - transfer in:  %8ld bytes", bytes_in);
-	debug("copyloop - transfer out: %8ld bytes", bytes_out);
-	syslog(LOG_NOTICE, "Disconnect %d secs, %ld in %ld out", (end_time - start_time), bytes_in, bytes_out);
+	end_time = (unsigned int)time(NULL);
+	syslog(LOG_INFO, "Disconnect after %d sec, %ld bytes in, %ld bytes out", (end_time - start_time), bytes_in, bytes_out);
 }
 
 void doproxyconnect(int socket)
@@ -789,31 +770,23 @@ static int target_connect(int client, struct sockaddr_in *target)
 	return sd;
 }
 
-/* lwait for a connection and move into copyloop...  again,
-   ftp redir will call this, so we don't dupilcate it. */
-static void do_accept(int servsock, struct sockaddr_in *target)
+static int client_accept(int sd, struct sockaddr_in *target)
 {
-	int clisock, status;
-	int targetsock;
-	struct sockaddr_in client, addr_out;
-	socklen_t clientlen = sizeof(client);
-     
-	memset(&client, 0, sizeof(client));
-	memset(&addr_out, 0, sizeof(addr_out));
+	int client, status;
 
-	debug("top of accept loop");
-	clisock = accept(servsock, (struct sockaddr *)&client, &clientlen);
-	if (clisock < 0) {
+	debug("Waiting for client to connect on server socket ...");
+	client = accept(sd, NULL, NULL);
+	if (client < 0) {
 		syslog(LOG_ERR, "Failed calling accept(): %s", strerror(errno));
 
 		switch(errno) {
 		case EHOSTUNREACH:
 		case ECONNRESET:
 		case ETIMEDOUT:
-			return;  /* non-fatal errors */
+			return 0; /* non-fatal errors */
 
 		default:
-			exit(1); /* all other errors assumed fatal */
+			return 1; /* all other errors assumed fatal */
 		}
 	}
      
@@ -828,42 +801,41 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 	switch (fork()) {
      	case -1: /* Error */
 		syslog(LOG_ERR, "Server failed fork(): %s", strerror(errno));
-     		_exit(1);
+		return 1;
 
      	case 0:  /* Child */
      		break;
 
      	default: /* Parent */
      		/* Wait for child (who has forked off grandchild) */
-     		(void) wait(&status);
+		(void)wait(&status);
 
      		/* Close sockets to prevent confusion */
-		close(clisock);
-     		return;
+		close(client);
+		return 0;
 	}
 
 	/* We are now the first child. Fork again and exit */
-	  
 	switch (fork()) {
      	case -1: /* Error */
 		syslog(LOG_ERR, "Failed duoble fork(): %s", strerror(errno));
-     		_exit(1);
+		_exit(1);
 
      	case 0:  /* Child */
      		break;
 
      	default: /* Parent */
-     		_exit(0);
+		_exit(0);
 	}
      
 	/* We are now the grandchild */
-	targetsock = target_connect(clisock, target);
-	if (targetsock < 0)
+	sd = target_connect(client, target);
+	if (sd < 0)
 		_exit(1);
 
 	/* do proxy stuff */
 	if (connect_str)
-		doproxyconnect(targetsock);
+		doproxyconnect(sd);
 
 #ifndef NO_SHAPER
 	/* initialise random number if necessary */
@@ -871,8 +843,10 @@ static void do_accept(int servsock, struct sockaddr_in *target)
 		srand(getpid());
 #endif
 
-	copyloop(clisock, targetsock, timeout);
-	exit(0);	/* Exit after copy */
+	copyloop(client, sd, timeout);
+	exit(0);
+
+	return 0;
 }
 
 /*
@@ -883,7 +857,7 @@ static void do_accept(int servsock, struct sockaddr_in *target)
  * fail is true if we should just return a -1 on error, false if we
  * should bail.
  */
-static int bindsock(char *addr, int port, int fail)
+static int server_socket(char *addr, int port, int fail)
 {
 	int ret, sd;
 	struct sockaddr_in server;
@@ -912,6 +886,11 @@ static int bindsock(char *addr, int port, int fail)
 	  
 		debug("listening on %s", addr);
 		if ((hp = gethostbyname(addr)) == NULL) {
+			if (fail) {
+				close(sd);
+				return -1;
+			}
+
 			syslog(LOG_ERR, "Cannot resolve hostname %s: %s", addr, strerror(errno));
 			exit(1);
 		}
@@ -1008,17 +987,12 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		sd = bindsock(local_addr, local_port, 0);
+		sd = server_socket(local_addr, local_port, 0);
 		if (sd == -1) {
-			syslog(LOG_ERR, "Failed bindsock(): %s", strerror(errno));
+			syslog(LOG_ERR, "Failed server_socket(): %s", strerror(errno));
 			return 1;
 		}
 
-		/*
-		 * Accept connections.  When we accept one, ns
-		 * will be connected to the client.  client will
-		 * contain the address of the client.
-		 */
 		while (1) {
 			struct sockaddr_in target;
 
@@ -1026,7 +1000,8 @@ int main(int argc, char *argv[])
 			if (target_init(target_addr, target_port, &target))
 				return 1;
 
-			do_accept(sd, &target);
+			if (client_accept(sd, &target))
+				return 1;
 		}
 	}
 
