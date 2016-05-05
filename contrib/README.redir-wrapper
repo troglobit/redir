@@ -1,7 +1,0 @@
-redir-wrapper is a shell script sent to be by Daniel Roesen
-<drossen@entire-systems.com> which simplifies the task of starting
-multiple redir instances using a configuration file in the form of
-redir-wrapper.conf.  
-
-Consult the Configuration section in redir-wrapper to use.
-
