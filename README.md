@@ -27,6 +27,7 @@ Consult the man page for details.
       -i,--inetd              Run from inetd, SRC:PORT comes from stdin
                               Usage: redir [OPTIONS] [DST]:PORT
       -I,--ident=NAME         Identity, tag syslog messages with NAME
+                              Also used as service name for TCP wrappers
       -l,--loglevel=LEVEL     Set log level: none, err, notice*, info, debug
       -n,--foreground         Run in foreground, do not detach from terminal
       -p,--transproxy         run in linux's transparent proxy mode
