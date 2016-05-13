@@ -14,6 +14,9 @@ firewalls, but, of course, there are other uses.
 
 For a UDP port redirector, see [uredir](https://github.com/troglobit/uredir/).
 
+Usage
+-----
+
 Consult the man page for details.
 
     Usage: redir [-hinspv] [-b IP]  [-f TYPE] [-I NAME] [-l LEVEL] [-t SEC]
