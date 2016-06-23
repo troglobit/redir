@@ -77,6 +77,8 @@ size_t bufsize    = BUFSIZ;
 char *connect_str = NULL;	/* CONNECT string passed to proxy */
 char *ident       = NULL;
 
+extern char *__progname;
+
 /* prototype anything needing it */
 static int client_accept(int sd, struct sockaddr_in *target);
 static int server_socket(char *addr, int port, int fail);
@@ -133,8 +135,6 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 
 static int usage(int code)
 {
-	extern char *__progname;
-
 	fprintf(stderr,"\n"
 		"Usage: %s [-hinspv] [-b IP]  [-f TYPE] [-I NAME] [-l LEVEL] [-t SEC]\n"
 		"                       [-x STR] [-m BPS] [-o FLAG] [-w MSEC] [-z BYTES]\n"
@@ -365,12 +365,8 @@ static void parse_args(int argc, char *argv[])
 			target_addr = strdup(dst);
 	}
 
-	if (!ident) {
-		if ((ident = (char *) strrchr(argv[0], '/')))
-			ident++;
-		else
-			ident = argv[0];
-	}
+	if (!ident)
+		ident = __progname;
 
 #ifndef NO_FTP
 	/* some kind of ftp being forwarded? */
