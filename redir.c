@@ -76,8 +76,7 @@ int wait_out      = 1;
 size_t bufsize    = BUFSIZ;
 char *connect_str = NULL;	/* CONNECT string passed to proxy */
 char *ident       = NULL;
-
-extern char *__progname;
+char *prognm      = PACKAGE_NAME;
 
 /* prototype anything needing it */
 static int client_accept(int sd, struct sockaddr_in *target);
@@ -138,7 +137,7 @@ static int usage(int code)
 	fprintf(stderr,"\n"
 		"Usage: %s [-hinspv] [-b IP]  [-f TYPE] [-I NAME] [-l LEVEL] [-t SEC]\n"
 		"                       [-x STR] [-m BPS] [-o FLAG] [-w MSEC] [-z BYTES]\n"
-		"                       [SRC]:PORT [DST]:PORT\n", __progname);
+		"                       [SRC]:PORT [DST]:PORT\n", prognm);
 	fprintf(stderr, "\n"
 		"Options:\n"
 		"  -b,--bind=IP            Force specific IP to bind() to when listening\n"
@@ -172,7 +171,7 @@ static int usage(int code)
 		"\n"
 		"SRC and DST are optional, %s will revert to use 0.0.0.0 (ANY)\n"
 		"Bug report address: %s\n"
-		"\n", __progname, __progname, PACKAGE_BUGREPORT);
+		"\n", prognm, prognm, PACKAGE_BUGREPORT);
 
 	return code;
 }
@@ -212,6 +211,19 @@ static int parse_ipport(char *arg, char *buf, size_t len)
 		port = atoi(ptr);
 
 	return port;
+}
+
+static char *progname(char *arg0)
+{
+	char *nm;
+
+	nm = strrchr(arg0, '/');
+	if (nm)
+		nm++;
+	else
+		nm = arg0;
+
+	return nm;
 }
 
 static void parse_args(int argc, char *argv[])
@@ -259,6 +271,7 @@ static void parse_args(int argc, char *argv[])
 #else
 #define SHAPER_OPTS ""
 #endif
+	prognm = progname(argv[0]);
 	while ((opt = getopt_long(argc, argv, "b:hiI:l:npst:vx:" FTP_OPTS SHAPER_OPTS, long_options, NULL)) != -1) {
 		switch (opt) {
 		case 'b':
@@ -366,7 +379,7 @@ static void parse_args(int argc, char *argv[])
 	}
 
 	if (!ident)
-		ident = __progname;
+		ident = prognm;
 
 #ifndef NO_FTP
 	/* some kind of ftp being forwarded? */
