@@ -112,3 +112,9 @@ Redir is distributed under the terms of the GNU Public Licence, version
 [Travis Status]:   https://travis-ci.org/troglobit/redir.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/8740
 [Coverity Status]: https://scan.coverity.com/projects/8740/badge.svg
+
+<!--
+  -- Local Variables:
+  -- mode: markdown
+  -- End:
+  -->
