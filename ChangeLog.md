@@ -3,6 +3,24 @@ Change Log
 
 All relevant changes to the project are documented in this file.
 
+[v3.1][UNRELEASED] - 2017-01-XX
+-------------------------------
+
+Restored support for some command line options on behalf of Debian.
+
+### Changes
+- New `--enable-compat` option added to configure script.  Enables
+  support for command line options from v2.x used by `vagrant-lxc`,
+  https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=824698#15
+  - `--laddr=SRC`
+  - `--lport=PORT`
+  - `--caddr=SRC`
+  - `--cport=PORT`
+
+### Fixes
+- Portability fixes for musl libc
+
+
 [v3.0][] - 2016-05-06
 ---------------------
 
@@ -210,6 +228,7 @@ the initial release by Sam Creasey.  In his own words:
 > code, 12.2.c.  But, hey, they do something.  (and that's the key.)
 
 [UNRELEASED]: https://github.com/troglobit/redir/compare/v3.0...HEAD
+[v3.1]: https://github.com/troglobit/redir/compare/v3.0...v3.1
 [v3.0]: https://github.com/troglobit/redir/compare/v2.3...v3.0
 [v2.3]: https://github.com/troglobit/redir/compare/v2.2.1...v2.3
 [v2.2.1]: https://github.com/troglobit/redir/compare/v2.2...v2.2.1
