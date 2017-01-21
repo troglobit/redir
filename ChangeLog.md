@@ -209,8 +209,8 @@ the initial release by Sam Creasey.  In his own words:
 > daemon, which is actually a horrible hack of ora's using C sample
 > code, 12.2.c.  But, hey, they do something.  (and that's the key.)
 
-[UNRELEASED]: https://github.com/troglobit/redir/compare/v2.3...HEAD
-[v3.0]: https://github.com/troglobit/redir/compare/v2.3...HEAD
+[UNRELEASED]: https://github.com/troglobit/redir/compare/v3.0...HEAD
+[v3.0]: https://github.com/troglobit/redir/compare/v2.3...v3.0
 [v2.3]: https://github.com/troglobit/redir/compare/v2.2.1...v2.3
 [v2.2.1]: https://github.com/troglobit/redir/compare/v2.2...v2.2.1
 [v2.2]: https://github.com/troglobit/redir/compare/v2.1...v2.2
