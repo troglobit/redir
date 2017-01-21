@@ -25,14 +25,14 @@ addons:
       name: "troglobit/redir"
       description: "A TCP port redirector for UNIX"
     notification_email: troglobit@gmail.com
-    build_command_prepend: "./autogen.sh && ./configure"
+    build_command_prepend: "./autogen.sh && ./configure --enable-compat"
     build_command:      "make"
     branch_pattern:     dev
 
 # Custom build script for the time being, no "make test" yet
 script:
   - ./autogen.sh
-  - ./configure --prefix=
+  - ./configure --prefix= --enable-compat
   - make clean
   - make -j5 V=1
   - DESTDIR=/tmp/tok make install-strip
