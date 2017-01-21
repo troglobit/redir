@@ -31,13 +31,13 @@ AS_IF([test "x$with_libwrap" != "xno"],[
 	AC_CHECK_HEADER([tcpd.h],, with_libwrap=no)
 ])
 
-AS_IF([test "x$enable_shaping" != "xno"],enable_shaping="yes",[
 AS_IF([test "x$enable_compat" = "xyes"], [
 	AC_DEFINE(COMPAT_OPTIONS, 1, [Enable v2.x command line syntax])])
 
+AS_IF([test "x$enable_shaping" != "xno"], enable_shaping="yes", [
 	AC_DEFINE(NO_SHAPER, 1, [Disable traffic shaping])])
 
-AS_IF([test "x$enable_ftp" != "xno"],enable_ftp="yes",[
+AS_IF([test "x$enable_ftp" != "xno"], enable_ftp="yes", [
 	AC_DEFINE(NO_FTP, 1, [Disable FTP support])])
 
 AC_OUTPUT
