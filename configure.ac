@@ -9,6 +9,9 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_HEADER_STDC
 
+AC_ARG_ENABLE(compat,
+        AS_HELP_STRING([--enable-compat], [Enable v2.x command line syntax]))
+
 AC_ARG_ENABLE(shaping,
         AS_HELP_STRING([--disable-shaping], [Disable traffic shaping support]))
 
@@ -29,6 +32,9 @@ AS_IF([test "x$with_libwrap" != "xno"],[
 ])
 
 AS_IF([test "x$enable_shaping" != "xno"],enable_shaping="yes",[
+AS_IF([test "x$enable_compat" = "xyes"], [
+	AC_DEFINE(COMPAT_OPTIONS, 1, [Enable v2.x command line syntax])])
+
 	AC_DEFINE(NO_SHAPER, 1, [Disable traffic shaping])])
 
 AS_IF([test "x$enable_ftp" != "xno"],enable_ftp="yes",[

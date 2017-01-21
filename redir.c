@@ -160,6 +160,14 @@ static int usage(int code)
 		" -t, --timeout=SEC        Set timeout to SEC seconds, default off (0)\n"
 		" -v, --version            Show program version\n"
 		" -x, --connect=STR        CONNECT string passed to proxy server\n"
+#ifdef COMPAT_OPTIONS
+		"\n"
+		"Compatibility options:\n"
+		"     --lport=PORT         Local port (when not running from inetd)\n"
+		"     --laddr=ADDRESS      Local address (when not running from inetd)\n"
+		"     --cport=PORT         Remote port to redirect traffic to\n"
+		"     --caddr=ADDRESS      Remote address to redirect traffic to\n"
+#endif
 #ifndef NO_SHAPER
 		"\n"
 		"Traffic Shaping:\n"
@@ -252,12 +260,18 @@ static void parse_args(int argc, char *argv[])
                 {"wait_in_out",   required_argument, 0, 'o'}, /* compat */
                 {"wait-in-out",   required_argument, 0, 'o'},
 #endif
+#ifdef COMPAT_OPTIONS
+		{"caddr",         required_argument, 0, 128},
+		{"cport",         required_argument, 0, 129},
+		{"laddr",         required_argument, 0, 130},
+		{"lport",         required_argument, 0, 131},
+#endif
 		{"version",       no_argument,       0, 'v'},
 		{0, 0, 0, 0}
 	};
 	
 	extern int optind;
-	int opt;
+	int opt, compat = 0;
 	char src[INET6_ADDRSTRLEN] = "", dst[INET6_ADDRSTRLEN] = "";
 #ifndef NO_FTP
 	char *ftp_type = NULL;
@@ -351,10 +365,36 @@ static void parse_args(int argc, char *argv[])
 		case 'x':
 			connect_str = optarg;
 			break;
+#ifdef COMPAT_OPTIONS
+		case 128:	/* --caddr=1.2.3.4 */
+			compat      = 1;
+			target_addr = strdup(optarg);
+			break;
 
+		case 129:	/* --cport=80 */
+			compat      = 1;
+			target_port = atoi(optarg);
+			break;
+
+		case 130:	/* --laddr=127.0.0.1 */
+			compat     = 1;
+			local_addr = strdup(optarg);
+			break;
+
+		case 131:	/* --lport=8080 */
+			compat     = 1;
+			local_port = atoi(optarg);
+			break;
+#endif
 		default:
 			exit(usage(1));
 		}
+	}
+
+	if (compat) {
+		background = 0;
+		do_syslog--;
+		goto done;
 	}
 
 	if (optind >= argc)
@@ -378,6 +418,7 @@ static void parse_args(int argc, char *argv[])
 			target_addr = strdup(dst);
 	}
 
+done:
 	if (!ident)
 		ident = prognm;
 
