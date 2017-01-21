@@ -93,7 +93,9 @@ See the file transproxy.txt in the distribution, and the Linux
 Documentation/networking/tproxy.txt for details.  Untested on modern
 Linux kernels.
 .It Fl s, Fl -syslog
-Log messages to syslog.
+Log messages to syslog.  Default, except when
+.Fl n
+is enabled.
 .It Fl t, Fl -timeout=SEC
 Timeout and close the connection after SEC seconds of inactivity.
 .It Fl v
@@ -133,6 +135,26 @@ or
 .Fl -random-wait
 to simulate a slow connection.
 .El
+.Sh BUGS
+Command line syntax changed in v3.0.  Compatibility with v2.x can be
+enabled using the
+.Fl -enable-compat
+configure option.  This enables the following options:
+.Fl -laddr=ADDR
+.Fl -lport=PORT
+.Fl -caddr=ADDR
+.Fl -cport=PORT
+which in v3.0 were been replaced with
+.Ar [SRC]:PORT
+and
+.Ar [DST]:PORT .
+.Pp
+For full compatibility, using any of these options will implicitly also
+enable
+.Fl n .
+There is currently no way to tell
+.Nm
+to background itself in this mode of operation.
 .Sh SEE ALSO
 .Xr inetd 1
 .Xr uredir 1

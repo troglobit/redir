@@ -49,6 +49,10 @@ Consult the man page for details.
     
     SRC and DST are optional, redir will revert to use 0.0.0.0 (ANY)
 
+The `redir` command line options changed in v3.0, some of the old ones
+are still available using the `--enable-compat` configure option.  Using
+any of them implicitly enables `-n` by default.
+
 
 Examples
 --------
