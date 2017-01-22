@@ -10,7 +10,7 @@ AC_PROG_INSTALL
 AC_HEADER_STDC
 
 AC_ARG_ENABLE(compat,
-        AS_HELP_STRING([--enable-compat], [Enable v2.x command line syntax]))
+        AS_HELP_STRING([--enable-compat], [Enable limited v2.x command line syntax]))
 
 AC_ARG_ENABLE(shaping,
         AS_HELP_STRING([--disable-shaping], [Disable traffic shaping support]))
