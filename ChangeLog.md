@@ -3,8 +3,8 @@ Change Log
 
 All relevant changes to the project are documented in this file.
 
-[v3.1][UNRELEASED] - 2017-01-XX
--------------------------------
+[v3.1][] - 2017-01-22
+---------------------
 
 Restored support for some command line options on behalf of Debian.
 
