@@ -35,7 +35,7 @@ Consult the man page for details.
                               Also used as service name for TCP wrappers
       -l,--loglevel=LEVEL     Set log level: none, err, notice*, info, debug
       -n,--foreground         Run in foreground, do not detach from terminal
-      -p,--transproxy         run in linux's transparent proxy mode
+      -p,--transproxy         Run in Linux's transparent proxy mode
       -s,--syslog             Log messages to syslog
       -t,--timeout=SEC        Set timeout to SEC seconds, default off (0)
       -v,--version            Show program version

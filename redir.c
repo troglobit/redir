@@ -155,7 +155,7 @@ static int usage(int code)
 #endif
 		" -l, --loglevel=LEVEL     Set log level: none, err, notice*, info, debug\n"
 		" -n, --foreground         Run in foreground, do not detach from terminal\n"
-		" -p, --transproxy         run in linux's transparent proxy mode\n"
+		" -p, --transproxy         Run in Linux's transparent proxy mode\n"
 		" -s, --syslog             Log messages to syslog\n"
 		" -t, --timeout=SEC        Set timeout to SEC seconds, default off (0)\n"
 		" -v, --version            Show program version\n"
