@@ -62,8 +62,10 @@ Mandatory arguments to long options are mandatory for short options too.
 .It Fl b, Fl -bind=IP
 Forces
 .Nm
-to pick a specific address/interface to bind to when it listens for
-incoming connections.
+to pick a specific address to bind to when it listens for incoming
+connections.  Not applicable when running in Linux's transparent proxy
+mode,
+.Fl p .
 .It Fl h, -help
 Show built-in help text.
 .It Fl f, -ftp=TYPE

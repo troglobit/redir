@@ -24,8 +24,8 @@ Consult the man page for details.
                            [SRC]:PORT [DST]:PORT
     
     Options:
-      -b,--bind=IP            Force specific IP to bind() to when listening
-                              for incoming connections
+      -b,--bind=IP            Force specific IP to bind() to when listening for
+                              incoming connections.  Not applicable with -p
       -f,--ftp=TYPE           Redirect FTP connections.  Where type is
                               one of: 'port', 'pasv', or 'both'
       -h,--help               Show this help text
