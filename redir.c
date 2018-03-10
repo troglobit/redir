@@ -379,7 +379,7 @@ static void parse_args(int argc, char *argv[])
 
 		case 129:	/* --cport=80 */
 			compat      = 1;
-			target_port = atoi(optarg);
+			target_port = parse_port(optarg);
 			break;
 
 		case 130:	/* --laddr=127.0.0.1 */
@@ -389,7 +389,7 @@ static void parse_args(int argc, char *argv[])
 
 		case 131:	/* --lport=8080 */
 			compat     = 1;
-			local_port = atoi(optarg);
+			local_port = parse_port(optarg);
 			break;
 #endif
 		default:
