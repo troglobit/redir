@@ -243,7 +243,7 @@ the initial release by Sam Creasey.  In his own words:
 > code, 12.2.c.  But, hey, they do something.  (and that's the key.)
 
 [UNRELEASED]: https://github.com/troglobit/redir/compare/v3.2...HEAD
-[v3.2]: https://github.com/troglobit/redir/compare/v3.2...v3.2
+[v3.2]: https://github.com/troglobit/redir/compare/v3.1...v3.2
 [v3.1]: https://github.com/troglobit/redir/compare/v3.0...v3.1
 [v3.0]: https://github.com/troglobit/redir/compare/v2.3...v3.0
 [v2.3]: https://github.com/troglobit/redir/compare/v2.2.1...v2.3
