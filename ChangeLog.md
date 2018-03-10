@@ -3,6 +3,21 @@ Change Log
 
 All relevant changes to the project are documented in this file.
 
+
+[v3.2][] - 2018-03-10
+---------------------
+
+Minor bug fixes.
+
+### Changes
+- Add missing `transproxy.txt` file to distribution
+- Update usage text and man page for `--bind` option, w.r.t. transproxy
+
+### Fixes
+- Issue #4: Service names from `/etc/services` not recognized for compat
+  syntax, `--lport` or `--cport`
+
+
 [v3.1][] - 2017-01-22
 ---------------------
 
@@ -227,7 +242,8 @@ the initial release by Sam Creasey.  In his own words:
 > daemon, which is actually a horrible hack of ora's using C sample
 > code, 12.2.c.  But, hey, they do something.  (and that's the key.)
 
-[UNRELEASED]: https://github.com/troglobit/redir/compare/v3.0...HEAD
+[UNRELEASED]: https://github.com/troglobit/redir/compare/v3.2...HEAD
+[v3.2]: https://github.com/troglobit/redir/compare/v3.2...v3.2
 [v3.1]: https://github.com/troglobit/redir/compare/v3.0...v3.1
 [v3.0]: https://github.com/troglobit/redir/compare/v2.3...v3.0
 [v2.3]: https://github.com/troglobit/redir/compare/v2.2.1...v2.3
