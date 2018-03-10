@@ -2,7 +2,7 @@ A TCP port redirector for UNIX
 ==============================
 [![Travis Status][]][Travis] [![Coverity Status]][Coverity Scan]
 
-This is a TCP port redirector for UNIX.  It can run under inetd or
+This is a TCP port redirector for UNIX.  It can be run under inetd or as
 standalone (in which case it handles multiple connections).  It is 8 bit
 clean, not limited to line mode, is small and lightweight.  If you want
 access control, run it under xinetd, or inetd with TCP wrappers.
@@ -49,9 +49,9 @@ Consult the man page for details.
     
     SRC and DST are optional, redir will revert to use 0.0.0.0 (ANY)
 
-The `redir` command line options changed in v3.0, some of the old ones
-are still available using the `--enable-compat` configure option.  Using
-any of them implicitly enables `-n` by default.
+The `redir` command line options changed  in v3.0, a limited form of the
+previous syntax is still available using the `--enable-compat` configure
+option.  Using any of them implicitly also enables `-n` by default.
 
 
 Examples
@@ -89,11 +89,12 @@ distribution, but that is no longer maintained.
 Building
 --------
 
-Redir comes with a GNU configure script which you can use to adapt the
-build to your needs.  If you would like to remove support for some
-extended options (for the sake of speed, code size, whatever), try the
+Redir comes with a  GNU configure script which you can  use to adapt the
+build  to your  needs.  If  you would  like to  remove support  for some
+extended options (for  the sake of speed, code size,  whatever), try the
 following options to configure:
 
+    --enable-compat    Enable limited v2.x command line syntax
     --disable-shaper   Disable traffic shaping code
     --disable-ftp      Disable FTP redirection support
 
