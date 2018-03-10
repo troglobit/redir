@@ -714,12 +714,13 @@ static int target_init(char *addr, int port, struct sockaddr_in *target)
 	if (addr) {
 		struct hostent *hp;
 
-		syslog(LOG_DEBUG, "target is %s:%d", addr, port);
 		hp = gethostbyname(addr);
 		if (!hp) {
 			syslog(LOG_ERR, "Unknown host %s", addr);
 			return -1;
 		}
+
+		syslog(LOG_DEBUG, "target is %s:%d", addr, port);
 		memcpy(&target->sin_addr, hp->h_addr, hp->h_length);
 	} else {
 		syslog(LOG_DEBUG, "target is default, 0.0.0.0:%d", port);
@@ -767,9 +768,10 @@ static int target_connect(int client, struct sockaddr_in *target)
 			syslog(LOG_ERR, "Failed resolving outbound IP address, %s: %s", bind_addr, strerror(errno));
 			return -1;
 		}
-		memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
 
+		memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
 		syslog(LOG_DEBUG, "IP address for target is %s", inet_ntoa(addr_out.sin_addr));
+
 	}
 
 	sd = socket(AF_INET, SOCK_STREAM, 0);
@@ -913,8 +915,8 @@ static int server_socket(char *addr, int port, int fail)
 	if (addr != NULL) {
 		struct hostent *hp;
 	  
-		syslog(LOG_DEBUG, "listening on %s:%d", addr, port);
-		if ((hp = gethostbyname(addr)) == NULL) {
+		hp = gethostbyname(addr);
+		if (!hp) {
 			if (fail) {
 				close(sd);
 				return -1;
@@ -923,6 +925,8 @@ static int server_socket(char *addr, int port, int fail)
 			syslog(LOG_ERR, "Cannot resolve hostname %s: %s", addr, strerror(errno));
 			exit(1);
 		}
+
+		syslog(LOG_DEBUG, "listening on %s:%d", addr, port);
 		memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
 	} else {
 		syslog(LOG_DEBUG, "local IP is default, listening on 0.0.0.0:%d", port);
