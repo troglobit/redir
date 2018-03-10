@@ -714,7 +714,7 @@ static int target_init(char *addr, int port, struct sockaddr_in *target)
 	if (addr) {
 		struct hostent *hp;
 
-		syslog(LOG_DEBUG, "target is %s", addr);
+		syslog(LOG_DEBUG, "target is %s:%d", addr, port);
 		hp = gethostbyname(addr);
 		if (!hp) {
 			syslog(LOG_ERR, "Unknown host %s", addr);
@@ -722,7 +722,7 @@ static int target_init(char *addr, int port, struct sockaddr_in *target)
 		}
 		memcpy(&target->sin_addr, hp->h_addr, hp->h_length);
 	} else {
-		syslog(LOG_DEBUG, "target is default");
+		syslog(LOG_DEBUG, "target is default, 0.0.0.0:%d", port);
 		target->sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 	}
 
@@ -913,7 +913,7 @@ static int server_socket(char *addr, int port, int fail)
 	if (addr != NULL) {
 		struct hostent *hp;
 	  
-		syslog(LOG_DEBUG, "listening on %s", addr);
+		syslog(LOG_DEBUG, "listening on %s:%d", addr, port);
 		if ((hp = gethostbyname(addr)) == NULL) {
 			if (fail) {
 				close(sd);
@@ -925,7 +925,7 @@ static int server_socket(char *addr, int port, int fail)
 		}
 		memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
 	} else {
-		syslog(LOG_DEBUG, "local IP is default");
+		syslog(LOG_DEBUG, "local IP is default, listening on 0.0.0.0:%d", port);
 		server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 	}
      
