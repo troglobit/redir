@@ -196,29 +196,35 @@ static int loglvl(char *level)
 	return atoi(level);
 }
 
-static int parse_ipport(char *arg, char *buf, size_t len)
+static int parse_port(char *arg)
 {
 	int port;
-	char *ptr;
 	struct servent *s;
+
+	s = getservbyname(arg, "tcp");
+	if (s != NULL)
+		port = ntohs(s->s_port);
+	else
+		port = atoi(arg);
+
+	return port;
+}
+
+static int parse_ipport(char *arg, char *buf, size_t len)
+{
+	char *port;
 
 	if (!arg || !buf || !len)
 		return -1;
 
-	ptr = strchr(arg, ':');
-	if (!ptr)
+	port = strchr(arg, ':');
+	if (!port)
 		return -1;
+	*port++ = 0;
 
-	*ptr++ = 0;
 	snprintf(buf, len, "%s", arg);
 
-	s = getservbyname(ptr, "tcp");
-	if (s != NULL)
-		port = ntohs(s->s_port);
-	else
-		port = atoi(ptr);
-
-	return port;
+	return parse_port(port);
 }
 
 static char *progname(char *arg0)
