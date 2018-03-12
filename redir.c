@@ -134,11 +134,11 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 
 static int usage(int code)
 {
-	fprintf(stderr,"\n"
+	fprintf(stdout,"\n"
 		"Usage: %s [-hinspv] [-b IP]  [-f TYPE] [-I NAME] [-l LEVEL] [-t SEC]\n"
 		"                       [-x STR] [-m BPS] [-o FLAG] [-w MSEC] [-z BYTES]\n"
 		"                       [SRC]:PORT [DST]:PORT\n", prognm);
-	fprintf(stderr, "\n"
+	fprintf(stdout, "\n"
 		"Options:\n"
 		" -b, --bind=IP            Force specific IP to bind() to when listening for\n"
 		"                          incoming connections.  Not applicable with -p\n"
@@ -365,7 +365,7 @@ static void parse_args(int argc, char *argv[])
 			break;
  #endif
 		case 'v':
-			fprintf(stderr, "%s\n", PACKAGE_VERSION);
+			fprintf(stdout, "%s\n", PACKAGE_VERSION);
 			exit(0);
 
 		case 'x':
