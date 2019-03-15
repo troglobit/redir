@@ -102,7 +102,7 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 		rand_time = rand() % (random_wait * 2);
 		syslog(LOG_DEBUG, "random wait: %u", rand_time);
 		waitbw.tv_sec  = rand_time / 1000;
-		waitbw.tv_usec = rand_time % 1000;
+		waitbw.tv_usec = (rand_time % 1000) * 1000;
 
 		select(1, &empty, NULL, NULL, &waitbw);
 	}
@@ -120,7 +120,7 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 		bits = size * 8;
 		syslog(LOG_DEBUG, "bandwidth wait: %lu", 1000 * bits / max_bandwidth);
 		waitbw.tv_sec  = bits / max_bandwidth;
-		waitbw.tv_usec = (1000 * (bits % max_bandwidth)) / max_bandwidth;
+		waitbw.tv_usec = (1000000 * (bits % max_bandwidth)) / max_bandwidth;
 
 		select(1, &empty, NULL, NULL, &waitbw);
 	}
