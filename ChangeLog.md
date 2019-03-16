@@ -4,6 +4,16 @@ Change Log
 All relevant changes to the project are documented in this file.
 
 
+[v3.3][UNRELEASED]
+---------------------
+
+### Fixes
+- Fix #5: Use `stdout`, not `stderr`, for `--version` and `--usage`
+- Fix #6: Minor typo in man page
+- Fix #9: Major timing bug fix in `--max-bandwidth` and `--random-wait`.
+  Delays below one second are off by a factor 1000!
+
+
 [v3.2][] - 2018-03-10
 ---------------------
 
