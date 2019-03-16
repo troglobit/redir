@@ -98,6 +98,17 @@ following options to configure:
     --disable-shaper   Disable traffic shaping code
     --disable-ftp      Disable FTP redirection support
 
+The GNU Configure & Build system use `/usr/local` as the default install
+prefix.  For most use-cases this is fine, but if you want to change this
+to `/usr` use the `--prefix=/usr` configure option:
+
+    ./configure --prefix=/usr
+    make -j5
+    sudo make install-strip
+
+Building from GIT sources require you have `automake` and `autoconf`
+installed.  Use `./autogen.sh` to create the configure script.
+
 
 Origin & References
 -------------------
