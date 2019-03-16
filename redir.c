@@ -142,11 +142,11 @@ static int usage(int code)
 		"Options:\n"
 		" -b, --bind=IP            Force specific IP to bind() to when listening for\n"
 		"                          incoming connections.  Not applicable with -p\n"
-		" -h, --help               Show this help text\n"
 #ifndef NO_FTP
 		" -f, --ftp=TYPE           Redirect FTP connections.  Where type is\n"
 		"                          one of: 'port', 'pasv', or 'both'\n"
 #endif
+		" -h, --help               Show this help text\n"
 		" -i, --inetd              Run from inetd, SRC:PORT comes from stdin\n"
 		"                          Usage: %s [OPTIONS] [DST]:PORT\n"
 		" -I, --ident=NAME         Identity, tag syslog messages with NAME\n"
