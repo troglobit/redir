@@ -14,6 +14,7 @@ firewalls, but, of course, there are other uses.
 
 For a UDP port redirector, see [uredir](https://github.com/troglobit/uredir/).
 
+
 Usage
 -----
 
@@ -24,37 +25,44 @@ Consult the man page for details.
                            [SRC]:PORT [DST]:PORT
     
     Options:
-      -b,--bind=IP            Force specific IP to bind() to when listening for
-                              incoming connections.  Not applicable with -p
-      -f,--ftp=TYPE           Redirect FTP connections.  Where type is
-                              one of: 'port', 'pasv', or 'both'
-      -h,--help               Show this help text
-      -i,--inetd              Run from inetd, SRC:PORT comes from stdin
-                              Usage: redir [OPTIONS] [DST]:PORT
-      -I,--ident=NAME         Identity, tag syslog messages with NAME
-                              Also used as service name for TCP wrappers
-      -l,--loglevel=LEVEL     Set log level: none, err, notice*, info, debug
-      -n,--foreground         Run in foreground, do not detach from terminal
-      -p,--transproxy         Run in Linux's transparent proxy mode
-      -s,--syslog             Log messages to syslog
-      -t,--timeout=SEC        Set timeout to SEC seconds, default off (0)
-      -v,--version            Show program version
-      -x,--connect=STR        CONNECT string passed to proxy server
+      -b, --bind=IP            Force specific IP to bind() to when listening for
+                               incoming connections.  Not applicable with -p
+      -f, --ftp=TYPE           Redirect FTP connections.  Where type is
+                               one of: 'port', 'pasv', or 'both'
+      -h, --help               Show this help text
+      -i, --inetd              Run from inetd, SRC:PORT comes from stdin
+                               Usage: redir [OPTIONS] [DST]:PORT
+      -I, --ident=NAME         Identity, tag syslog messages with NAME
+                               Also used as service name for TCP wrappers
+      -l, --loglevel=LEVEL     Set log level: none, err, notice*, info, debug
+      -n, --foreground         Run in foreground, do not detach from terminal
+      -p, --transproxy         Run in Linux's transparent proxy mode
+      -s, --syslog             Log messages to syslog
+      -t, --timeout=SEC        Set timeout to SEC seconds, default off (0)
+      -v, --version            Show program version
+      -x, --connect=STR        CONNECT string passed to proxy server
     
     Traffic Shaping:
-      -m,--max-bandwidth=BPS  Limit the bandwidth to BPS bits/second
-      -o,--wait-in-out=FLAG   Wait for in(1), out(2), or in&out(3)
-      -w,--random-wait=MSEC   Wait MSEC milliseconds before each packet
-      -z,--bufsize=BYTES      Size of the traffic shaping buffer
+      -m, --max-bandwidth=BPS  Limit the bandwidth to BPS bits/second
+      -o, --wait-in-out=FLAG   Wait for in(1), out(2), or in&out(3)
+      -w, --random-wait=MSEC   Wait MSEC milliseconds before each packet
+      -z, --bufsize=BYTES      Size of the traffic shaping buffer
     
     SRC and DST are optional, redir will revert to use 0.0.0.0 (ANY)
 
 
 ### Old Syntax
 
-**Note:** command line options changed in v3.0.  A limited subset of the
-          old syntax is available with the `--enable-compat` configure
-          option.  This implicitly also enables `-n` by default.
+Command line options changed in v3.0.  A limited subset of the old
+syntax is available with the `--enable-compat` configure option.
+This implicitly also enables `-n` by default.
+
+The following subset of the old syntax are available:
+
+	  --lport=PORT             Local port (when not running from inetd)
+	  --laddr=ADDRESS          Local address (when not running from inetd)
+	  --cport=PORT             Remote port to redirect traffic to
+	  --caddr=ADDRESS          Remote address to redirect traffic to
 
 
 Examples
