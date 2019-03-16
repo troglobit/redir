@@ -50,8 +50,7 @@ Consult the man page for details.
     SRC and DST are optional, redir will revert to use 0.0.0.0 (ANY)
 
 
-Old Syntax
-----------
+### Old Syntax
 
 **Note:** command line options changed in v3.0.  A limited subset of the
           old syntax is available with the `--enable-compat` configure
