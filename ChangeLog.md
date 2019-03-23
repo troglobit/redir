@@ -4,12 +4,13 @@ Change Log
 All relevant changes to the project are documented in this file.
 
 
-[v3.3][UNRELEASED]
+[v3.3][] - 2019-03-23
 ---------------------
 
 ### Fixes
 - Fix #5: Use `stdout`, not `stderr`, for `--version` and `--usage`
 - Fix #6: Minor typo in man page
+- Fix #8: Update build instructions in README
 - Fix #9: Major timing bug fix in `--max-bandwidth` and `--random-wait`.
   Delays below one second are off by a factor 1000!
 
@@ -252,7 +253,8 @@ the initial release by Sam Creasey.  In his own words:
 > daemon, which is actually a horrible hack of ora's using C sample
 > code, 12.2.c.  But, hey, they do something.  (and that's the key.)
 
-[UNRELEASED]: https://github.com/troglobit/redir/compare/v3.2...HEAD
+[UNRELEASED]: https://github.com/troglobit/redir/compare/v3.3...HEAD
+[v3.3]: https://github.com/troglobit/redir/compare/v3.2...v3.3
 [v3.2]: https://github.com/troglobit/redir/compare/v3.1...v3.2
 [v3.1]: https://github.com/troglobit/redir/compare/v3.0...v3.1
 [v3.0]: https://github.com/troglobit/redir/compare/v2.3...v3.0
