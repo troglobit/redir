@@ -7,7 +7,7 @@ standalone (in which case it handles multiple connections).  It is 8 bit
 clean, not limited to line mode, is small and lightweight.  If you want
 access control, run it under xinetd, or inetd with TCP wrappers.
 
-Redir listens for TCP connections on a given port, and, when it recieves
+Redir listens for TCP connections on a given port, and, when it receives
 a connection, then connects to a given destination `address:port`, and
 pass data between them.  It finds most of its applications in traversing
 firewalls, but, of course, there are other uses.
