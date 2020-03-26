@@ -374,6 +374,8 @@ static void parse_args(int argc, char *argv[])
 #ifdef COMPAT_OPTIONS
 		case 128:	/* --caddr=1.2.3.4 */
 			compat      = 1;
+			if (target_addr)
+				free(target_addr);
 			target_addr = strdup(optarg);
 			break;
 
@@ -384,6 +386,8 @@ static void parse_args(int argc, char *argv[])
 
 		case 130:	/* --laddr=127.0.0.1 */
 			compat     = 1;
+			if (local_addr)
+				free(local_addr);
 			local_addr = strdup(optarg);
 			break;
 
