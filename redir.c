@@ -54,6 +54,7 @@ int timeout    = 0;
 int loglevel   = LOG_NOTICE;
 int do_syslog  = 0;
 int transproxy = 0;
+int oob = 0;
 
 char *target_addr = NULL;
 int   target_port = 0;
@@ -160,6 +161,7 @@ static int usage(int code)
 		" -t, --timeout=SEC        Set timeout to SEC seconds, default off (0)\n"
 		" -v, --version            Show program version\n"
 		" -x, --connect=STR        CONNECT string passed to proxy server\n"
+		" -O, --oob                Redirect Out-of-band data also\n"
 #ifdef COMPAT_OPTIONS
 		"\n"
 		"Compatibility options:\n"
@@ -257,6 +259,7 @@ static void parse_args(int argc, char *argv[])
 		{"ftp",           required_argument, 0, 'f'},
 #endif
 		{"transproxy",    no_argument,       0, 'p'},
+		{"oob",           no_argument,       0, 'O'},
 #ifndef NO_SHAPER
                 {"bufsize",       required_argument, 0, 'z'},
                 {"max_bandwidth", required_argument, 0, 'm'}, /* compat */
@@ -292,7 +295,7 @@ static void parse_args(int argc, char *argv[])
 #define SHAPER_OPTS ""
 #endif
 	prognm = progname(argv[0]);
-	while ((opt = getopt_long(argc, argv, "b:hiI:l:npst:vx:" FTP_OPTS SHAPER_OPTS, long_options, NULL)) != -1) {
+	while ((opt = getopt_long(argc, argv, "b:hiI:l:npst:vx:O" FTP_OPTS SHAPER_OPTS, long_options, NULL)) != -1) {
 		switch (opt) {
 		case 'b':
 			bind_addr = optarg;
@@ -371,6 +374,11 @@ static void parse_args(int argc, char *argv[])
 		case 'x':
 			connect_str = optarg;
 			break;
+
+		case 'O':
+			oob++;
+			break;
+
 #ifdef COMPAT_OPTIONS
 		case 128:	/* --caddr=1.2.3.4 */
 			compat      = 1;
@@ -599,19 +607,38 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 	syslog(LOG_DEBUG, "Entering copyloop() - timeout is %d", timeout_secs);
 	while (1) {
 		fd_set iofds;
+		fd_set exfds;
 
 		FD_ZERO(&iofds);
 		FD_SET(insock, &iofds);
 		FD_SET(outsock, &iofds);
+
+		if (oob) {
+			FD_ZERO(&exfds);
+			FD_SET(insock, &exfds);
+			FD_SET(outsock, &exfds);
+		}
 
 		/* Set up timeout, Linux returns seconds left in this structure
 		 * so we have to reset it before each select(). */
 		timeout.tv_sec = timeout_secs;
 		timeout.tv_usec = 0;
 
-		if (select(max_fd + 1, &iofds, NULL, NULL, (timeout_secs ? &timeout : NULL)) <= 0) {
+		if (select(max_fd + 1, &iofds, NULL, (oob ? &exfds : NULL), (timeout_secs ? &timeout : NULL)) <= 0) {
 			syslog(LOG_DEBUG, "Connection timeout: %d sec", timeout_secs);
 			break;
+		}
+
+		if (oob && FD_ISSET(insock, &exfds)) {
+			bytes = recv(insock, buf, bufsize, MSG_OOB);
+			if (bytes > 0 && send(outsock, buf, bytes, MSG_OOB) != bytes)
+				break;
+		}
+
+		if (oob && FD_ISSET(outsock, &exfds)) {
+			bytes = recv(outsock, buf, bufsize, MSG_OOB);
+			if (bytes > 0 && send(insock, buf, bytes, MSG_OOB) != bytes)
+				break;
 		}
 
 		if (FD_ISSET(insock, &iofds)) {

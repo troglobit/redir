@@ -41,6 +41,7 @@ Consult the man page for details.
       -t, --timeout=SEC        Set timeout to SEC seconds, default off (0)
       -v, --version            Show program version
       -x, --connect=STR        CONNECT string passed to proxy server
+      -O, --oob                Redirect Out-of-band data also
     
     Traffic Shaping:
       -m, --max-bandwidth=BPS  Limit the bandwidth to BPS bits/second
