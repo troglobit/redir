@@ -278,7 +278,7 @@ static void parse_args(int argc, char *argv[])
 	
 	extern int optind;
 	int opt, compat = 0;
-	char src[INET6_ADDRSTRLEN] = "", dst[INET6_ADDRSTRLEN] = "";
+	char src[256] = "", dst[256] = "";
 #ifndef NO_FTP
 	char *ftp_type = NULL;
 #define FTP_OPTS "f"
