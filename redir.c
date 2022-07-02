@@ -519,14 +519,14 @@ void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
 
 	if (ftpsrv == 0) {
 		/* send the new port and ipaddress to the server */
-		(*bytes) = sprintf(buf, "PORT %d,%d,%d,%d,%d,%d\n",
+		(*bytes) = snprintf(buf, len, "PORT %d,%d,%d,%d,%d,%d\n",
 				   sockname.sin_addr.s_addr & 0xff, 
 				   (sockname.sin_addr.s_addr >> 8) & 0xff, 
 				   (sockname.sin_addr.s_addr >> 16) & 0xff,
 				   sockname.sin_addr.s_addr >> 24, lporthi, lportlo);
 	} else {
 		/* send the new port and ipaddress to the client */
-		(*bytes) = sprintf(buf, "227 Entering Passive Mode (%d,%d,%d,%d,%d,%d)\n",
+		(*bytes) = snprintf(buf, len, "227 Entering Passive Mode (%d,%d,%d,%d,%d,%d)\n",
 				   sockname.sin_addr.s_addr & 0xff, 
 				   (sockname.sin_addr.s_addr >> 8) & 0xff, 
 				   (sockname.sin_addr.s_addr >> 16) & 0xff,
@@ -669,20 +669,20 @@ no_mem:
 
 void doproxyconnect(int socket)
 {
-	int x;
 	char buf[128];
+	int rc;
 
 	/* write CONNECT string to proxy */
-	sprintf((char *)&buf, "CONNECT %s HTTP/1.0\n\n", connect_str);
-	x = write(socket, (char *)&buf, strlen(buf));
-	if (x < 1) {
+	snprintf(buf, sizeof(buf), "CONNECT %s HTTP/1.0\n\n", connect_str);
+	rc = write(socket, buf, strlen(buf));
+	if (rc < 1) {
 		syslog(LOG_ERR, "Failed writing to proxy: %s", strerror(errno));
 		exit(1);
 	}
 
 	/* now read result */
-	x = read(socket, (char *)&buf, sizeof(buf));
-	if (x < 1) {
+	rc = read(socket, buf, sizeof(buf));
+	if (rc < 1) {
 		syslog(LOG_ERR, "Failed reading reply from proxy: %s", strerror(errno));
 		exit(1);
 	}
