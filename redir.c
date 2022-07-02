@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
@@ -47,6 +48,12 @@
 
 #define REDIR_IN  1
 #define REDIR_OUT 0
+
+#define DBG(fmt, args...)  logit(LOG_DEBUG,   fmt, ##args)
+#define INFO(fmt, args...) logit(LOG_INFO,    fmt, ##args)
+#define LOG(fmt, args...)  logit(LOG_NOTICE,  fmt, ##args)
+#define ERR(fmt, args...)  logit(LOG_ERR,     fmt, ##args)
+#define WARN(fmt, args...) logit(LOG_WARNING, fmt, ##args)
 
 int inetd      = 0;
 int background = 1;
@@ -82,6 +89,16 @@ char *prognm      = PACKAGE_NAME;
 static int client_accept(int sd, struct sockaddr_in *target);
 static int server_socket(char *addr, int port, int fail);
 
+
+static void logit(int level, char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsyslog(level, fmt, ap);
+	va_end(ap);
+}
+
 #ifndef NO_SHAPER
 /* Used in this program to write something in a socket, it has the same
    parameters and return value as "write", but with the flag "in": true if
@@ -100,7 +117,7 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 		FD_ZERO(&empty);
 
 		rand_time = rand() % (random_wait * 2);
-		syslog(LOG_DEBUG, "random wait: %u", rand_time);
+		DBG("random wait: %u", rand_time);
 		waitbw.tv_sec  = rand_time / 1000;
 		waitbw.tv_usec = (rand_time % 1000) * 1000;
 
@@ -118,7 +135,7 @@ static inline ssize_t redir_write(int fd, const void *buf, size_t size, int in)
 
 		/* wait to be sure tu be below the allowed bandwidth */
 		bits = size * 8;
-		syslog(LOG_DEBUG, "bandwidth wait: %lu", 1000 * bits / max_bandwidth);
+		DBG("bandwidth wait: %lu", 1000 * bits / max_bandwidth);
 		waitbw.tv_sec  = bits / max_bandwidth;
 		waitbw.tv_usec = (1000000 * (bits % max_bandwidth)) / max_bandwidth;
 
@@ -360,7 +377,7 @@ static void parse_args(int argc, char *argv[])
                 case 'z':
 			bufsize = (unsigned int)atol(optarg);
 			if (bufsize < 256) {
-				syslog(LOG_ERR, "Too small buffer (%zd), must be at least 256 bytes!", bufsize);
+				ERR("Too small buffer (%zd), must be at least 256 bytes!", bufsize);
 				exit(usage(1));
 			}
 			break;
@@ -493,7 +510,7 @@ void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
     
 	/* get the outside interface so we can listen */
 	if (getsockname(send, (struct sockaddr *)&sockname, &socksize) != 0) {
-		syslog(LOG_ERR, "Failed getsockname(): %s", strerror(errno));
+		ERR("Failed getsockname(): %s", strerror(errno));
 		exit(1);
 	}
 
@@ -503,13 +520,13 @@ void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
 	   we will use the port 0, so let the system pick one. */
 	sd = server_socket(inet_ntoa(sockname.sin_addr), 0, 1);
 	if (sd == -1) {
-		syslog(LOG_ERR, "Failed creating server socket: %s", strerror(errno));
+		ERR("Failed creating server socket: %s", strerror(errno));
 		exit(1);
 	}
 	
 	/* get the real info */
 	if (getsockname(sd, (struct sockaddr *)&sockname, &socksize) < 0) {
-		syslog(LOG_ERR, "Failed getsockname(): %s", strerror(errno));
+		ERR("Failed getsockname(): %s", strerror(errno));
 		exit(1);
 	}
 
@@ -537,10 +554,10 @@ void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
 	newsession.sin_addr.s_addr = remip[0] | (remip[1] << 8)
 		| (remip[2] << 16) | (remip[3] << 24);
 
-	syslog(LOG_DEBUG, "ftpdata server ip: %s", inet_ntoa(newsession.sin_addr));
-	syslog(LOG_DEBUG, "ftpdata server port: %d", rport);
-	syslog(LOG_DEBUG, "listening for ftpdata on port %d", lport);
-	syslog(LOG_DEBUG, "listening for ftpdata on addr %s", inet_ntoa(sockname.sin_addr));
+	DBG("ftpdata server ip: %s", inet_ntoa(newsession.sin_addr));
+	DBG("ftpdata server port: %d", rport);
+	DBG("listening for ftpdata on port %d", lport);
+	DBG("listening for ftpdata on addr %s", inet_ntoa(sockname.sin_addr));
 
 
 	/* now that we're bound and listening, we can safely send the new
@@ -555,7 +572,7 @@ void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
 	
 	switch (fork()) {
      	case -1: /* Error */
-		syslog(LOG_ERR, "Failed calling fork(): %s", strerror(errno));
+		ERR("Failed calling fork(): %s", strerror(errno));
 		_exit(1);
 
 	case 0:  /* Child */
@@ -593,11 +610,11 @@ static void copyloop(int insock, int outsock, int tmo)
 
 	buf = malloc(bufsize);
 	if (!buf) {
-		syslog(LOG_ERR, "Failed allocating session buffer: %s", strerror(errno));
+		ERR("Failed allocating session buffer: %s", strerror(errno));
 		goto no_mem;
 	}
 
-	syslog(LOG_DEBUG, "Entering copyloop() - timeout is %d", tmo);
+	DBG("Entering copyloop() - timeout is %d", tmo);
 	while (1) {
 		fd_set iofds;
 
@@ -611,7 +628,7 @@ static void copyloop(int insock, int outsock, int tmo)
 		tv.tv_usec = 0;
 
 		if (select(max_fd + 1, &iofds, NULL, NULL, (tmo ? &tv : NULL)) <= 0) {
-			syslog(LOG_DEBUG, "Connection timeout: %d sec", tmo);
+			DBG("Connection timeout: %d sec", tmo);
 			break;
 		}
 
@@ -664,7 +681,7 @@ no_mem:
 	close(insock);
 	close(outsock);
 	end_time = (unsigned int)time(NULL);
-	syslog(LOG_INFO, "Disconnect after %d sec, %ld bytes in, %ld bytes out", (end_time - start_time), bytes_in, bytes_out);
+	INFO("Disconnect after %d sec, %ld bytes in, %ld bytes out", (end_time - start_time), bytes_in, bytes_out);
 }
 
 void doproxyconnect(int socket)
@@ -676,14 +693,14 @@ void doproxyconnect(int socket)
 	snprintf(buf, sizeof(buf), "CONNECT %s HTTP/1.0\n\n", connect_str);
 	rc = write(socket, buf, strlen(buf));
 	if (rc < 1) {
-		syslog(LOG_ERR, "Failed writing to proxy: %s", strerror(errno));
+		ERR("Failed writing to proxy: %s", strerror(errno));
 		exit(1);
 	}
 
 	/* now read result */
 	rc = read(socket, buf, sizeof(buf));
 	if (rc < 1) {
-		syslog(LOG_ERR, "Failed reading reply from proxy: %s", strerror(errno));
+		ERR("Failed reading reply from proxy: %s", strerror(errno));
 		exit(1);
 	}
 	/* no more error checking for now -- something should be added later */
@@ -701,12 +718,12 @@ static int verify_request(int sd)
 	sock_hostaddr(ri.client);
 
 	if (!hosts_access(&ri)) {
-		syslog(LOG_WARNING, "Connection from %s DENIED", eval_client(&ri));
+		WARN("Connection from %s DENIED", eval_client(&ri));
 		refuse(&ri);
 		return -1;
 	}
 
-	syslog(LOG_INFO, "Connection from %s ALLOWED", eval_client(&ri));
+	INFO("Connection from %s ALLOWED", eval_client(&ri));
 
 	return 0;
 }
@@ -721,14 +738,14 @@ static int target_init(char *addr, int port, struct sockaddr_in *target)
 
 		hp = gethostbyname(addr);
 		if (!hp) {
-			syslog(LOG_ERR, "Unknown host %s", addr);
+			ERR("Unknown host %s", addr);
 			return -1;
 		}
 
-		syslog(LOG_DEBUG, "target is %s:%d", addr, port);
+		DBG("target is %s:%d", addr, port);
 		memcpy(&target->sin_addr, hp->h_addr, hp->h_length);
 	} else {
-		syslog(LOG_DEBUG, "target is default, 0.0.0.0:%d", port);
+		DBG("target is default, 0.0.0.0:%d", port);
 		target->sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 	}
 
@@ -750,12 +767,12 @@ static int target_connect(int client, struct sockaddr_in *target)
 #endif /* USE_TCP_WRAPPERS */
 
 	if (!getpeername(client, (struct sockaddr *)&peer, &peerlen)) {
-		syslog(LOG_DEBUG, "peer IP is %s", inet_ntoa(peer.sin_addr));
-		syslog(LOG_DEBUG, "peer socket is %d", ntohs(peer.sin_port));
+		DBG("peer IP is %s", inet_ntoa(peer.sin_addr));
+		DBG("peer socket is %d", ntohs(peer.sin_port));
 	}
 
-	syslog(LOG_DEBUG, "target IP address is %s", inet_ntoa(target->sin_addr));
-	syslog(LOG_DEBUG, "target port is %d", ntohs(target->sin_port));
+	DBG("target IP address is %s", inet_ntoa(target->sin_addr));
+	DBG("target port is %d", ntohs(target->sin_port));
 
 	if (transproxy) {
 		memcpy(&addr_out, &peer, sizeof(struct sockaddr_in));
@@ -770,36 +787,36 @@ static int target_connect(int client, struct sockaddr_in *target)
 		addr_out.sin_port = 0;
 		hp = gethostbyname(bind_addr);
 		if (!hp) {
-			syslog(LOG_ERR, "Failed resolving outbound IP address, %s: %s", bind_addr, strerror(errno));
+			ERR("Failed resolving outbound IP address, %s: %s", bind_addr, strerror(errno));
 			return -1;
 		}
 
 		memcpy(&addr_out.sin_addr, hp->h_addr, hp->h_length);
-		syslog(LOG_DEBUG, "IP address for target is %s", inet_ntoa(addr_out.sin_addr));
+		DBG("IP address for target is %s", inet_ntoa(addr_out.sin_addr));
 
 	}
 
 	sd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sd < 0) {
-		syslog(LOG_ERR, "Failed creating target socket: %s", strerror(errno));
+		ERR("Failed creating target socket: %s", strerror(errno));
 		return -1;
 	}
 
 	if (bind_addr || transproxy) {
 		if (bind(sd, (struct sockaddr *)&addr_out, sizeof(addr_out)) < 0) {
-			syslog(LOG_ERR, "Failed binding to outbound address: %s", strerror(errno));
+			ERR("Failed binding to outbound address: %s", strerror(errno));
 			close(sd);
 			return -1;
 		}
 	}
 
 	if (connect(sd, (struct sockaddr *)target, sizeof(*target)) < 0) {
-		syslog(LOG_ERR, "Failed connecting to target %s: %s", inet_ntoa(target->sin_addr), strerror(errno));
+		ERR("Failed connecting to target %s: %s", inet_ntoa(target->sin_addr), strerror(errno));
 		close(sd);
 		return -1;
 	}
 
-	syslog(LOG_INFO, "Connecting %s:%d to %s:%d", inet_ntoa(peer.sin_addr), ntohs(peer.sin_port),
+	INFO("Connecting %s:%d to %s:%d", inet_ntoa(peer.sin_addr), ntohs(peer.sin_port),
 	       inet_ntoa(target->sin_addr), ntohs(target->sin_port));
 
 	return sd;
@@ -809,10 +826,10 @@ static int client_accept(int sd, struct sockaddr_in *target)
 {
 	int client, status;
 
-	syslog(LOG_DEBUG, "Waiting for client to connect on server socket ...");
+	DBG("Waiting for client to connect on server socket ...");
 	client = accept(sd, NULL, NULL);
 	if (client < 0) {
-		syslog(LOG_ERR, "Failed calling accept(): %s", strerror(errno));
+		ERR("Failed calling accept(): %s", strerror(errno));
 
 		switch(errno) {
 		case EHOSTUNREACH:
@@ -835,7 +852,7 @@ static int client_accept(int sd, struct sockaddr_in *target)
 	 */
 	switch (fork()) {
      	case -1: /* Error */
-		syslog(LOG_ERR, "Server failed fork(): %s", strerror(errno));
+		ERR("Server failed fork(): %s", strerror(errno));
 		close(client);
 		return 1;
 
@@ -854,7 +871,7 @@ static int client_accept(int sd, struct sockaddr_in *target)
 	/* We are now the first child. Fork again and exit */
 	switch (fork()) {
      	case -1: /* Error */
-		syslog(LOG_ERR, "Failed duoble fork(): %s", strerror(errno));
+		ERR("Failed duoble fork(): %s", strerror(errno));
 		_exit(1);
 
      	case 0:  /* Child */
@@ -910,7 +927,7 @@ static int server_socket(char *addr, int port, int fail)
 		if (fail)
 			return -1;
 
-		syslog(LOG_ERR, "Failed creating server socket: %s", strerror(errno));
+		ERR("Failed creating server socket: %s", strerror(errno));
 		exit(1);
 	}
 
@@ -927,14 +944,14 @@ static int server_socket(char *addr, int port, int fail)
 				return -1;
 			}
 
-			syslog(LOG_ERR, "Cannot resolve hostname %s: %s", addr, strerror(errno));
+			ERR("Cannot resolve hostname %s: %s", addr, strerror(errno));
 			exit(1);
 		}
 
-		syslog(LOG_DEBUG, "listening on %s:%d", addr, port);
+		DBG("listening on %s:%d", addr, port);
 		memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
 	} else {
-		syslog(LOG_DEBUG, "local IP is default, listening on 0.0.0.0:%d", port);
+		DBG("local IP is default, listening on 0.0.0.0:%d", port);
 		server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 	}
      
@@ -945,7 +962,7 @@ static int server_socket(char *addr, int port, int fail)
 			return -1;
 		}
 
-		syslog(LOG_ERR, "Failed setting socket option SO_REUSEADDR: %s", strerror(errno));
+		ERR("Failed setting socket option SO_REUSEADDR: %s", strerror(errno));
 		exit(1);
 	}
 
@@ -956,7 +973,7 @@ static int server_socket(char *addr, int port, int fail)
 			return -1;
 		}
 
-		syslog(LOG_ERR, "Failed setting socket option SO_LINGER: %s", strerror(errno));
+		ERR("Failed setting socket option SO_LINGER: %s", strerror(errno));
 		exit(1);
 	}
      
@@ -969,7 +986,7 @@ static int server_socket(char *addr, int port, int fail)
 			return -1;
 		}
 
-		syslog(LOG_ERR, "Failed binding server socket: %s", strerror(errno));
+		ERR("Failed binding server socket: %s", strerror(errno));
 		exit(1);
 	}
      
@@ -982,7 +999,7 @@ static int server_socket(char *addr, int port, int fail)
 			return -1;
 		}
 
-		syslog(LOG_ERR, "Failed calling listen() on server socket: %s", strerror(errno));
+		ERR("Failed calling listen() on server socket: %s", strerror(errno));
 		exit(1);
 	}
      
@@ -1019,16 +1036,16 @@ int main(int argc, char *argv[])
 		int sd;
 	
 		if (background) {
-			syslog(LOG_DEBUG, "Daemonizing ...");
+			DBG("Daemonizing ...");
 			if (-1 == daemon(0, 0)) {
-				syslog(LOG_ERR, "Failed daemonizing: %s", strerror(errno));
+				ERR("Failed daemonizing: %s", strerror(errno));
 				return 1;
 			}
 		}
 
 		sd = server_socket(local_addr, local_port, 0);
 		if (sd == -1) {
-			syslog(LOG_ERR, "Failed server_socket(): %s", strerror(errno));
+			ERR("Failed server_socket(): %s", strerror(errno));
 			return 1;
 		}
 
