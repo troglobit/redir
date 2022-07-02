@@ -1,6 +1,6 @@
 A TCP port redirector for UNIX
 ==============================
-[![Travis Status][]][Travis] [![Coverity Status]][Coverity Scan]
+[![GitHub Status][]][GitHub] [![Coverity Status]][Coverity Scan]
 
 This is a TCP port redirector for UNIX.  It can be run under inetd or as
 standalone (in which case it handles multiple connections).  It is 8 bit
@@ -125,17 +125,17 @@ Origin & References
 -------------------
 
 Redir was originally created by [Sam Creasey][] and is now developed and
-maintained at [GitHub][] by [Joachim Nilsson][].  Use GitHub to file bug
+maintained at [GitHub][1] by [Joachim Wiberg][].  Use GitHub to file bug
 reports, clone, or send pull requests for bug fixes and extensions.
 
 Redir is distributed under the terms of the GNU Public Licence, version
 2 or later, distributed with this source archive in the file COPYING.
 
 [Sam Creasey]:     http://sammy.net/~sammy/hacks/
-[Joachim Nilsson]: http://troglobit.com
-[GitHub]:          https://github.com/troglobit/redir
+[Joachim Wiberg]:  http://troglobit.com
+[1]:               https://github.com/troglobit/redir
 [Finit]:           https://github.com/troglobit/finit
-[Travis]:          https://travis-ci.org/troglobit/redir
-[Travis Status]:   https://travis-ci.org/troglobit/redir.png?branch=master
+[GitHub]:          https://github.com/troglobit/redir/actions/workflows/build.yml/
+[GitHub Status]:   https://github.com/troglobit/redir/actions/workflows/build.yml/badge.svg
 [Coverity Scan]:   https://scan.coverity.com/projects/8740
 [Coverity Status]: https://scan.coverity.com/projects/8740/badge.svg
