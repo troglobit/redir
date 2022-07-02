@@ -1,5 +1,6 @@
 bin_PROGRAMS    = redir
 redir_SOURCES   = redir.c
+redir_CFLAGS    = -W -Wall -Wextra
 dist_man1_MANS  = redir.1
 doc_DATA        = README.md transproxy.txt
 EXTRA_DIST      = $(doc_DATA) ChangeLog.md
