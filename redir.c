@@ -895,10 +895,10 @@ static int client_accept(int sd, struct sockaddr_in *target)
  */
 static int server_socket(char *addr, int port, int fail)
 {
-	int ret, sd;
+	struct linger linger_opt = { 0, 0}; /* do not linger */
 	struct sockaddr_in server;
 	int reuse_addr = 1;                 /* allow address reuse */
-	struct linger linger_opt = { 0, 0}; /* do not linger */
+	int ret, sd;
 
 	/*
 	 * Get a socket to work with.  This socket will
