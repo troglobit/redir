@@ -1,10 +1,14 @@
 *~
 *.o
 .deps
-autom4te.cache
+GPATH
+GRTAGS
+GTAGS
+ID
 Makefile
 Makefile.in
 aclocal.m4
+autom4te.cache
 compile
 config.h
 config.h.in
