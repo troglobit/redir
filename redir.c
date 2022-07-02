@@ -250,6 +250,7 @@ static void parse_args(int argc, char *argv[])
 		{"inetd",         no_argument,       0, 'i'},
 		{"ident",         required_argument, 0, 'I'},
 		{"loglevel",      required_argument, 0, 'l'},
+		{"foreground",    no_argument,       0, 'n'},
 		{"name",          required_argument, 0, 'I'},
 		{"syslog",        no_argument,       0, 's'},
 		{"connect",       required_argument, 0, 'x'},
