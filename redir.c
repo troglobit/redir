@@ -140,8 +140,8 @@ static int usage(int code)
 		"                       [SRC]:PORT [DST]:PORT\n", prognm);
 	fprintf(stdout, "\n"
 		"Options:\n"
-		" -b, --bind=IP            Force specific IP to bind() to when listening for\n"
-		"                          incoming connections.  Not applicable with -p\n"
+		" -b, --bind=IP            Listen only to IP on the server-side connection,\n"
+		"                          how DST connects to redir. Not applicable with -p\n"
 #ifndef NO_FTP
 		" -f, --ftp=TYPE           Redirect FTP connections.  Where type is\n"
 		"                          one of: 'port', 'pasv', or 'both'\n"

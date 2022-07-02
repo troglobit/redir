@@ -3,16 +3,32 @@ A TCP port redirector for UNIX
 [![GitHub Status][]][GitHub] [![Coverity Status]][Coverity Scan]
 
 This is a TCP port redirector for UNIX.  It can be run under inetd or as
-standalone (in which case it handles multiple connections).  It is 8 bit
-clean, not limited to line mode, is small and lightweight.  If you want
-access control, run it under xinetd, or inetd with TCP wrappers.
+a standalone daemon (in which case it handles multiple connections).  It
+is 8-bit clean, not limited to line mode, yet small and lightweight.  If
+you want access control, run it under xinetd or inetd with TCP wrappers.
 
-Redir listens for TCP connections on a given port, and, when it receives
-a connection, then connects to a given destination `address:port`, and
-pass data between them.  It finds most of its applications in traversing
-firewalls, but, of course, there are other uses.
+`redir` listens for TCP connections on a given `SRC:PORT`.  When clients
+connect to `redir` it initiates a connection to the server on `DST:PORT`
+to pass data between them.  Te `SRC` and `DST` are from the perspective
+of `redir`.
 
-For a UDP port redirector, see [uredir](https://github.com/troglobit/uredir/).
+```
+                      -------> SRC:PORT -----> DST:PORT
+
+Request:       CLIENT -------> redir --------> SERVER
+
+
+Response:      CLIENT <------- redir <-------- SERVER
+                                     --bind=addr
+```
+
+**Note:** the `--bind=ADDR` argument is to limit `redir` on the server
+side reply, in case the box `redir` runs on have multiple addresses or
+interfaces on the server side.
+
+> `redir` finds most of its applications in traversing firewalls, but,
+> of course, there are other use-cases.  For a UDP port redirector, see
+> [uredir](https://github.com/troglobit/uredir/)
 
 
 Usage

@@ -21,9 +21,9 @@
 .Ar [DST]:PORT
 .Sh DESCRIPTION
 .Nm
-redirects TCP connections coming in on a local port,
+redirects TCP connections coming in on a local port, called the client
 .Ar [SRC]:PORT ,
-to a specified address/port combination,
+to a specified address/port combination, called the server
 .Ar [DST]:PORT .
 Both the
 .Ar SRC
@@ -62,9 +62,19 @@ Mandatory arguments to long options are mandatory for short options too.
 .It Fl b, Fl -bind=IP
 Forces
 .Nm
-to pick a specific address to bind to when it listens for incoming
-connections.  Not applicable when running in Linux's transparent proxy
-mode,
+to pick a specific address to bind to when it listens for connections
+from the server side.  I.e., filtering the interface and address used
+for the proxied reply from the server back to the client.
+.Pp
+One mental model is to consider
+.Nm
+as sitting on the the border of the Internet and a LAN.  Clients connect
+from the Internet side, this option tells
+.Nm
+which interface (address) on the LAN side to listen for replies from the
+server side (DST:PORT).
+.Pp
+Not applicable when running in Linux's transparent proxy mode,
 .Fl p .
 .It Fl h, -help
 Show built-in help text.
