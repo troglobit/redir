@@ -456,15 +456,16 @@ done:
    
 void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
 {
-	char *port_start;
-	int rporthi, lporthi;
-	int lportlo, rportlo;
-	int lport, rport;
-	int remip[4];
-	int sd;
 	socklen_t socksize = sizeof(struct sockaddr_in);
 	struct sockaddr_in newsession;
 	struct sockaddr_in sockname;
+	int rporthi, lporthi;
+	int lportlo, rportlo;
+	size_t len = *bytes;
+	char *port_start;
+	int lport, rport;
+	int remip[4];
+	int sd;
 
 	if (ftpsrv == 0) {
 		/* is this a port commando ? */
@@ -472,9 +473,9 @@ void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
 			redir_write(send, buf, (*bytes), REDIR_OUT);
 			return;
 		}
+
 		/* parse the old address out of the buffer */
 		port_start = strchr(buf, ' ');
-
 		sscanf(port_start, " %d,%d,%d,%d,%d,%d", &remip[0], &remip[1],
 		       &remip[2], &remip[3], &rporthi, &rportlo);
 	} else {
@@ -486,7 +487,6 @@ void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
 		
 		/* parse the old address out of the buffer */
 		port_start = strchr(buf, '(');
-		
 		sscanf(port_start, "(%d,%d,%d,%d,%d,%d", &remip[0], &remip[1],
 		       &remip[2], &remip[3], &rporthi, &rportlo);
 	}
@@ -573,14 +573,14 @@ void ftp_clean(int send, char *buf, ssize_t *bytes, int ftpsrv)
 #endif
 
 
-static void copyloop(int insock, int outsock, int timeout_secs)
+static void copyloop(int insock, int outsock, int tmo)
 {
-	int max_fd;			/* Maximum numbered fd used */
-	struct timeval timeout;
-	ssize_t bytes;
-	ssize_t bytes_in = 0;
-	ssize_t bytes_out = 0;
 	unsigned int start_time, end_time;
+	ssize_t bytes_out = 0;
+	ssize_t bytes_in = 0;
+	struct timeval tv;
+	ssize_t bytes;
+	int max_fd;			/* Maximum numbered fd used */
 	char *buf;
 
 	/* Record start time */
@@ -597,7 +597,7 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 		goto no_mem;
 	}
 
-	syslog(LOG_DEBUG, "Entering copyloop() - timeout is %d", timeout_secs);
+	syslog(LOG_DEBUG, "Entering copyloop() - timeout is %d", tmo);
 	while (1) {
 		fd_set iofds;
 
@@ -607,11 +607,11 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 
 		/* Set up timeout, Linux returns seconds left in this structure
 		 * so we have to reset it before each select(). */
-		timeout.tv_sec = timeout_secs;
-		timeout.tv_usec = 0;
+		tv.tv_sec = tmo;
+		tv.tv_usec = 0;
 
-		if (select(max_fd + 1, &iofds, NULL, NULL, (timeout_secs ? &timeout : NULL)) <= 0) {
-			syslog(LOG_DEBUG, "Connection timeout: %d sec", timeout_secs);
+		if (select(max_fd + 1, &iofds, NULL, NULL, (tmo ? &tv : NULL)) <= 0) {
+			syslog(LOG_DEBUG, "Connection timeout: %d sec", tmo);
 			break;
 		}
 
@@ -620,7 +620,7 @@ static void copyloop(int insock, int outsock, int timeout_secs)
 			if (bytes <= 0)
 				break;
 
-			/* Make sure to terminate buffer before passing it to ftp_clean() */
+			/* Ensure buffer is terminated when passing it to ftp_clean() */
 			buf[bytes] = 0;
 
 #ifndef NO_FTP
@@ -737,9 +737,9 @@ static int target_init(char *addr, int port, struct sockaddr_in *target)
 
 static int target_connect(int client, struct sockaddr_in *target)
 {
-	int sd;
 	struct sockaddr_in peer, addr_out;
 	socklen_t peerlen = sizeof(peer);
+	int sd;
 
 	memset(&peer, 0, sizeof(peer));
 	memset(&addr_out, 0, sizeof(addr_out));
@@ -898,7 +898,7 @@ static int server_socket(char *addr, int port, int fail)
 	struct linger linger_opt = { 0, 0}; /* do not linger */
 	struct sockaddr_in server;
 	int reuse_addr = 1;                 /* allow address reuse */
-	int ret, sd;
+	int rc, sd;
 
 	/*
 	 * Get a socket to work with.  This socket will
@@ -938,8 +938,8 @@ static int server_socket(char *addr, int port, int fail)
 		server.sin_addr.s_addr = htonl(inet_addr("0.0.0.0"));
 	}
      
-	ret = setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
-	if (ret != 0) {
+	rc = setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
+	if (rc != 0) {
 		if (fail) {
 			close(sd);
 			return -1;
@@ -949,8 +949,8 @@ static int server_socket(char *addr, int port, int fail)
 		exit(1);
 	}
 
-	ret = setsockopt(sd, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(linger_opt)); 
-	if (ret != 0) {
+	rc = setsockopt(sd, SOL_SOCKET, SO_LINGER, &linger_opt, sizeof(linger_opt));
+	if (rc != 0) {
 		if (fail) {
 			close(sd);
 			return -1;
