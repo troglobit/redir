@@ -124,9 +124,10 @@ installed.  Use `./autogen.sh` to create the configure script.
 Origin & References
 -------------------
 
-Redir was originally created by [Sam Creasey][] and is now developed and
-maintained at [GitHub][1] by [Joachim Wiberg][].  Use GitHub to file bug
-reports, clone, or send pull requests for bug fixes and extensions.
+Redir was originally created by Nigel Metheringham and [Sam Creasey][].
+It is now maintained at [GitHub][1] by [Joachim Wiberg][].  Use GitHub
+to file bug reports, clone, or send pull requests for bug fixes and
+extensions.
 
 Redir is distributed under the terms of the GNU Public Licence, version
 2 or later, distributed with this source archive in the file COPYING.

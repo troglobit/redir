@@ -16,7 +16,7 @@ looked at even once.  See the Linux Documentation/networking/tproxy.txt
 for more information.  My guess is that it'll take some effort to get it
 working in redir again.
 
-	    -- Joachim Nilsson <troglobit@gmail.com>
+	    -- Joachim Wiberg <troglobit@gmail.com>
 
 
 Non-forking server

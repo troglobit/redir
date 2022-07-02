@@ -2,7 +2,7 @@
  *
  * Copyright (c) 1996-1999  Sam Creasey <sammy@oh.verio.com>
  * Copyright (c) 1996       Nigel Metheringham <Nigel.Metheringham@ThePLAnet.net>
- * Copyright (c) 2016       Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (c) 2016-2022  Joachim Wiberg <troglobit@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

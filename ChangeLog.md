@@ -100,7 +100,7 @@ change how you call `redir` in order to upgrade.
 [v2.3][] - 2016-05-01
 ---------------------
 
-This is a checkpoint release by the new maintainer, Joachim Nilsson,
+This is a checkpoint release by the new maintainer, Joachim Wiberg,
 integrating all (most) of Debian's patches.
 
 ### Changes
