@@ -9,7 +9,7 @@ you want access control, run it under xinetd or inetd with TCP wrappers.
 
 `redir` listens for TCP connections on a given `SRC:PORT`.  When clients
 connect to `redir` it initiates a connection to the server on `DST:PORT`
-to pass data between them.  Te `SRC` and `DST` are from the perspective
+to pass data between them.  The `SRC` and `DST` are from the perspective
 of `redir`.
 
 ```
@@ -39,10 +39,9 @@ Consult the man page for details.
     Usage: redir [-hinspv] [-b IP]  [-f TYPE] [-I NAME] [-l LEVEL] [-t SEC]
                            [-x STR] [-m BPS] [-o FLAG] [-w MSEC] [-z BYTES]
                            [SRC]:PORT [DST]:PORT
-    
     Options:
-      -b, --bind=IP            Force specific IP to bind() to when listening for
-                               incoming connections.  Not applicable with -p
+      -b, --bind=IP            Listen only to IP on the server-side connection,
+                               how DST connects to redir. Not applicable with -p
       -f, --ftp=TYPE           Redirect FTP connections.  Where type is
                                one of: 'port', 'pasv', or 'both'
       -h, --help               Show this help text
