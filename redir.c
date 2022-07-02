@@ -217,7 +217,7 @@ static int parse_ipport(char *arg, char *buf, size_t len)
 	if (!arg || !buf || !len)
 		return -1;
 
-	port = strchr(arg, ':');
+	port = strrchr(arg, ':');
 	if (!port)
 		return -1;
 	*port++ = 0;
